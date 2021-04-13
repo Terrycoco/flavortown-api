@@ -1,0 +1,27 @@
+{
+  "name": "flavortown-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./index.js",
+    "dev": "nodemon ./index.js",
+    "predev": "export EXPRESS_PORT=5000 && heroku config:get DATABASE_URL -a flavorworld-api > .env"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Terrycoco/flavortown-api.git"
+  },
+  "author": "Terry Marr",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Terrycoco/flavortown-api/issues"
+  },
+  "homepage": "https://github.com/Terrycoco/flavortown-api#readme",
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "pg-promise": "^10.10.1"
+  }
+}
