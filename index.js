@@ -58,7 +58,8 @@ app.get('/cats', (req, res, next) => {
 
 //insert new item
 app.post("/items/new", (req, res, next) => {
-  const {item, cat_id} = req.body;                
+  const {item, cat_id} = req.body; 
+  console.log('addding item: ', item, 'cat_id:', cat_id);            
   db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id, item", [item, cat_id])
     .then(data => {
       console.log('item added:', data);
@@ -66,7 +67,7 @@ app.post("/items/new", (req, res, next) => {
    })
     .catch(error => {
       //TODO: better error handling - how to send error to user?
-      console.log('ERROR 69', error.detail);
+      console.error('ERROR 70 trying to insert item:', req.body, error.detail);
       res.send(error.detail);
     })
 });
@@ -82,14 +83,14 @@ app.post("/pairing/new", (req, res, next) => {
    })
     .catch((error) => {
 
-        console.log('ERROR 83', error.detail);
+        console.error('ERROR 88', error.detail);
         res.send(error.detail);
        
     })
 });
 
 //get friends
-app.get('/friends/:itemId', (req, res, next) => {
+app.get("/friends/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   if (item_id) {
     db.any("select friend_id, friend, affinity_level from all_friends_vw where item_id = $1 order by friend;", [item_id])
@@ -99,7 +100,7 @@ app.get('/friends/:itemId', (req, res, next) => {
     })
     .catch(error => {
        //TODO: better error handling - how to send error to user?
-        console.log('ERROR 99', error.detail);
+        console.error('ERROR 103', error.detail);
         res.send(error.detail);
     })
 }
