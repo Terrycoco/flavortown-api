@@ -106,5 +106,45 @@ app.get("/friends/:itemId", (req, res, next) => {
 }
 });
 
+//get mutual friends
+
+
+
+
+
+
+app.get("/mutual/:items", (req, res, next) => {
+  const array = JSON.parse(req.params.items); //convert to array
+  console.log('items passed', array, Array.isArray(array));
+
+  let sql = `select friend_id, friend, friend_cat from friends_with_cats_vw`;
+  let whereclause = ' WHERE item_id IN(';
+  let groupclause = " GROUP BY friend_cat, friend_id, friend ";
+  let orderclause = " ORDER BY friend_cat, friend ";
+
+  if (!Array.isArray(array) || !array.length) {
+  // array does not exist, is not an array, or is empty
+  // ⇒ do not attempt to process array
+     sql = sql + groupclause + orderclause;
+    console.log(sql);
+   } else {
+     array.forEach((item, index) => {
+       whereclause = whereclause + item + ','
+     })
+     sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(item_id) = " + array.length + orderclause;
+     console.log(sql);
+   }
+   db.any(sql)
+    .then(data => {
+      //console.log('data: ', data);
+      res.send(data);
+    })
+    .catch(error => {
+       //TODO: better error handling - how to send error to user?
+        console.error('ERROR 145', error.detail);
+        res.send(error.detail);
+    })
+});
+
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
