@@ -93,7 +93,7 @@ app.post("/pairing/new", (req, res, next) => {
 app.get("/friends/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   if (item_id) {
-    db.any("select friend_id, friend, affinity_level from all_friends_vw where item_id = $1 order by friend;", [item_id])
+    db.any("select friend_id as id, friend as name, affinity_level from all_friends_vw where item_id = $1 order by friend;", [item_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
@@ -106,18 +106,52 @@ app.get("/friends/:itemId", (req, res, next) => {
 }
 });
 
-//get mutual friends
+// //whitelist by array of items
+// app.post("/whitelist", (req, res, next) => {
+//   const {items} = req.body; //sb array
+//   const array = JSON.parse(req.params.items); //convert to array
+//   console.log('items passed', array, Array.isArray(array));
+
+//   let sql = `select friend_id, friend as value, friend_cat from friends_with_cats_vw`;
+//   let whereclause = ' WHERE item IN(';
+//   let groupclause = " GROUP BY friend_cat, friend_id, friend ";
+//   let orderclause = " ORDER BY friend_cat, friend ";
+
+//   if (!Array.isArray(array) || !array.length) {
+//   // array does not exist, is not an array, or is empty
+//   // ⇒ do not attempt to process array
+//      sql = sql + groupclause + orderclause;
+//     console.log(sql);
+//    } else {
+//      array.forEach((item, index) => {
+//        whereclause = whereclause + item + ','
+//      })
+//      sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(*) = " + array.length + orderclause;
+//      console.log(sql);
+//    }
+//    db.any(sql)
+//     .then(data => {
+//       //console.log('data: ', data);
+//       res.send(data);
+//     })
+//     .catch(error => {
+//        //TODO: better error handling - how to send error to user?
+//         console.error('ERROR 139', error.detail);
+//         res.send(error.detail);
+//     })
+// });
 
 
 
 
 
 
+//mutual friens
 app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('items passed', array, Array.isArray(array));
 
-  let sql = `select friend_id, friend, friend_cat from friends_with_cats_vw`;
+  let sql = `select friend_id as id, friend as name, friend_cat as cat from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
   let groupclause = " GROUP BY friend_cat, friend_id, friend ";
   let orderclause = " ORDER BY friend_cat, friend ";
@@ -131,7 +165,7 @@ app.get("/mutual/:items", (req, res, next) => {
      array.forEach((item, index) => {
        whereclause = whereclause + item + ','
      })
-     sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(item_id) = " + array.length + orderclause;
+     sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(*) = " + array.length + orderclause;
      console.log(sql);
    }
    db.any(sql)
@@ -141,7 +175,7 @@ app.get("/mutual/:items", (req, res, next) => {
     })
     .catch(error => {
        //TODO: better error handling - how to send error to user?
-        console.error('ERROR 145', error.detail);
+        console.error('ERROR 179', error.detail);
         res.send(error.detail);
     })
 });
