@@ -36,7 +36,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY cat, item') 
+   db.any('select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
     .then(data => {
       res.send(data);
     })
@@ -97,6 +97,24 @@ app.post("/pairing/new", (req, res, next) => {
         }
    })
 });
+
+//insert new pairing - or edit affinity-level
+app.post("/pairing/delete", (req, res, next) => {
+  const {item1_id, item2_id } = req.body;           
+  db.none("DELETE from pairings WHERE (item1_id = $1 AND item2_id = $2) OR (item2_id = $1 AND item1_id = $2);", [item1_id, item2_id])
+    .then(() => {
+      res.end();
+   })
+    .catch((error) => {
+       //fallback
+        console.error('ERROR 88', error.detail);
+
+        res.end();
+
+   })
+});
+
+
 
 //get friends
 app.get("/friends/:itemId", (req, res, next) => {
