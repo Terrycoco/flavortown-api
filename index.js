@@ -36,7 +36,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items
 app.get('/items', (req, res, next) => {
-   db.any('select * from items ORDER BY item') 
+   db.any('select item_id as id, item as name, main_cat_id from items ORDER BY item') 
     .then(data => {
       res.send(data);
     })
@@ -60,7 +60,7 @@ app.get('/cats', (req, res, next) => {
 app.post("/items/new", (req, res, next) => {
   const {item, cat_id} = req.body; 
   console.log('addding item: ', item, 'cat_id:', cat_id);            
-  db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id, item", [item, cat_id])
+  db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id as id, item as name", [item, cat_id])
     .then(data => {
       console.log('item added:', data);
       res.send(data);
@@ -82,11 +82,20 @@ app.post("/pairing/new", (req, res, next) => {
       res.end();
    })
     .catch((error) => {
-
+       //fallback
+       if (error.constraint === 'unique_pairings') {
+         db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [lesser, greater, level])
+          .then(() => { 
+          res.end();
+         })
+ 
+       } else {
         console.error('ERROR 88', error.detail);
-        res.send(error.detail);
+
+        res.end();
        
-    })
+        }
+   })
 });
 
 //get friends
@@ -105,42 +114,6 @@ app.get("/friends/:itemId", (req, res, next) => {
     })
 }
 });
-
-// //whitelist by array of items
-// app.post("/whitelist", (req, res, next) => {
-//   const {items} = req.body; //sb array
-//   const array = JSON.parse(req.params.items); //convert to array
-//   console.log('items passed', array, Array.isArray(array));
-
-//   let sql = `select friend_id, friend as value, friend_cat from friends_with_cats_vw`;
-//   let whereclause = ' WHERE item IN(';
-//   let groupclause = " GROUP BY friend_cat, friend_id, friend ";
-//   let orderclause = " ORDER BY friend_cat, friend ";
-
-//   if (!Array.isArray(array) || !array.length) {
-//   // array does not exist, is not an array, or is empty
-//   // ⇒ do not attempt to process array
-//      sql = sql + groupclause + orderclause;
-//     console.log(sql);
-//    } else {
-//      array.forEach((item, index) => {
-//        whereclause = whereclause + item + ','
-//      })
-//      sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(*) = " + array.length + orderclause;
-//      console.log(sql);
-//    }
-//    db.any(sql)
-//     .then(data => {
-//       //console.log('data: ', data);
-//       res.send(data);
-//     })
-//     .catch(error => {
-//        //TODO: better error handling - how to send error to user?
-//         console.error('ERROR 139', error.detail);
-//         res.send(error.detail);
-//     })
-// });
-
 
 
 
