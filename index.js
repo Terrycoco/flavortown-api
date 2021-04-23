@@ -36,7 +36,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id from items ORDER BY item') 
+   db.any('select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY cat, item') 
     .then(data => {
       res.send(data);
     })
@@ -124,7 +124,7 @@ app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('items passed', array, Array.isArray(array));
 
-  let sql = `select friend_id as id, friend as name, friend_cat as cat from friends_with_cats_vw`;
+  let sql = `select friend_id as id, friend as name, friend_cat as cat, min(affinity_level) as min_affinity from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
   let groupclause = " GROUP BY friend_cat, friend_id, friend ";
   let orderclause = " ORDER BY friend_cat, friend ";
