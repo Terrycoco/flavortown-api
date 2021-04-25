@@ -56,6 +56,25 @@ app.get('/cats', (req, res, next) => {
     })
 });
 
+//get items for one cat
+app.get("/itemsbycat/:catId", (req, res, next) => {
+  const cat_id = req.params.catId;
+  if (cat_id) {
+    db.any("select item_id as id, item as name, main_cat_id as cat_id from items where main_cat_id = $1 order by item;", [cat_id])
+    .then(data => {
+      //console.log('data: ', data);
+      res.send(data);
+    })
+    .catch(error => {
+       //TODO: better error handling - how to send error to user?
+        console.error('ERROR 103', error.detail);
+        res.send(error.detail);
+    })
+}
+});
+
+
+
 //insert new item
 app.post("/items/new", (req, res, next) => {
   const {item, cat_id} = req.body; 
@@ -134,17 +153,14 @@ app.get("/friends/:itemId", (req, res, next) => {
 });
 
 
-
-
-
-//mutual friens
+//mutual friends
 app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('items passed', array, Array.isArray(array));
 
-  let sql = `select friend_id as id, friend as name, friend_cat as cat, min(affinity_level) as min_affinity from friends_with_cats_vw`;
+  let sql = `select friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(affinity_level) as min_affinity from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
-  let groupclause = " GROUP BY friend_cat, friend_id, friend ";
+  let groupclause = " GROUP BY friend_cat, friend_cat_id, friend_id, friend ";
   let orderclause = " ORDER BY friend_cat, friend ";
 
   if (!Array.isArray(array) || !array.length) {
