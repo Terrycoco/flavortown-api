@@ -47,7 +47,7 @@ app.get('/items', (req, res, next) => {
 
 //all cats
 app.get('/cats', (req, res, next) => {
-   db.any('select * from cats ORDER BY cat') 
+   db.any('select * from cats  ORDER BY cat') 
     .then(data => {
       res.send(data);
     })
@@ -103,9 +103,10 @@ app.post("/pairing/new", (req, res, next) => {
     .catch((error) => {
        //fallback
        if (error.constraint === 'unique_pairings') {
-         db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [lesser, greater, level])
+         return db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [lesser, greater, level])
           .then(() => { 
-          res.end();
+             res.end();
+             return;
          })
  
        } else {
@@ -117,7 +118,66 @@ app.post("/pairing/new", (req, res, next) => {
    })
 });
 
-//insert new pairing - or edit affinity-level
+//update a combo to make sure all ingredients
+//go with eachother as friends
+app.get("/updcombo/:itemId" , (req, res, next) => {
+  const item_id = req.params.itemId;
+ 
+  if (item_id) {
+    db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and affinity_level = 5", [item_id])
+    .then(ingreds => {
+
+    if (ingreds.length > 1) {
+       let i;
+       let inner;
+       let sql = "INSERT into pairings (item1_id, item2_id) VALUES ";
+
+
+       for (i=0; i < ingreds.length - 1; i++) {
+
+        //console.log(' i is:', i);
+
+           for (inner=i+1; inner < ingreds.length; inner++) {
+
+            // console.log('got here inner is:', inner);
+              sql = sql + "(" + ingreds[i].id + "," + ingreds[inner].id + "),";
+           }
+        }
+
+        
+         //removelast comma
+         sql = sql.slice(0, -1);
+         sql = sql + ' ON CONFLICT DO NOTHING';
+          console.log('ending sql', sql);
+
+          return db.any(sql)
+          .then(() => {
+            console.log('done')
+            res.send('done');
+            return;
+          })
+          .catch(err => {
+            console.error(err.detail);
+          });
+      
+    } else {
+      //do nothing
+      res.end();
+    }
+  })
+  .catch(err => {
+     res.send(err.detail);
+  });
+
+} else {
+  //do nothing
+  res.end();
+}
+
+});
+
+
+//delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
   const {item1_id, item2_id } = req.body;           
   db.none("DELETE from pairings WHERE (item1_id = $1 AND item2_id = $2) OR (item2_id = $1 AND item1_id = $2);", [item1_id, item2_id])
@@ -151,6 +211,24 @@ app.get("/friends/:itemId", (req, res, next) => {
     })
 }
 });
+
+//get ingredients of combo
+app.get("/ingreds/:itemId", (req, res, next) => {
+  const item_id = req.params.itemId;
+  if (item_id) {
+    db.any("select friend_id as id, friend as name, affinity_level from all_friends_vw where item_id = $1 and affinity_level=5 order by friend;", [item_id])
+    .then(data => {
+      //console.log('data: ', data);
+      res.send(data);
+    })
+    .catch(error => {
+       //TODO: better error handling - how to send error to user?
+        console.error('ERROR 103', error.detail);
+        res.send(error.detail);
+    })
+}
+});
+
 
 
 //mutual friends
