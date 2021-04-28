@@ -91,6 +91,22 @@ app.post("/items/new", (req, res, next) => {
     })
 });
 
+//insert new item
+app.post("/item/edit", (req, res, next) => {
+  const {item_id, cat_id, item} = req.body; 
+  console.log('editing item: ', item, 'cat_id:', cat_id);            
+  db.none("UPDATE items set item = $1, main_cat_id = $2 WHERE item_id = $3", [item, cat_id, item_id] )
+    .then(() => {
+      console.log('item updated:', req.body);
+      res.end();
+   })
+    .catch(err => {
+      //TODO: better error handling - how to send error to user?
+      console.error('ERROR 105 trying to update item:', req.body, err.message);
+      res.send(err.message);
+    })
+});
+
 //insert new pairing - or edit affinity-level
 app.post("/pairing/new", (req, res, next) => {
   const {item1_id, item2_id, level=1} = req.body;
