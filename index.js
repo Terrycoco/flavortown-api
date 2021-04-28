@@ -107,6 +107,22 @@ app.post("/item/edit", (req, res, next) => {
     })
 });
 
+//delete item
+app.post("/item/delete", (req, res, next) => {
+  const {item_id} = req.body; 
+  console.log('deleting item: ', item_id);            
+  db.none("DELETE from items WHERE item_id = $1", [ item_id] )
+    .then(() => {
+      console.log('item deleted:', req.body);
+      res.end();
+   })
+    .catch(err => {
+      //TODO: better error handling - how to send error to user?
+      console.error('ERROR 121 trying to update item:', req.body, err.message);
+      res.error(err.message);
+    })
+});
+
 //insert new pairing - or edit affinity-level
 app.post("/pairing/new", (req, res, next) => {
   const {item1_id, item2_id, level=1} = req.body;
