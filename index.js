@@ -238,7 +238,7 @@ app.get("/mutual/:items", (req, res, next) => {
 
   let sql = `select friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(affinity_level) as min_affinity from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
-  let groupclause = " GROUP BY friend_cat, friend_cat_id, friend_id, friend ";
+  let groupclause = " and affinity_level > 0 GROUP BY friend_cat, friend_cat_id, friend_id, friend ";
   let orderclause = " ORDER BY friend_cat, friend ";
 
   if (!Array.isArray(array) || !array.length) {
