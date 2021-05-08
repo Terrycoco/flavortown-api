@@ -1,0 +1,413 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"req",
+				"requestRoute"
+			],
+			[
+				"id",
+				"id"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "index.js",
+			"settings":
+			{
+				"buffer_size": 9904,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 352.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"Snippet: ",
+				"Snippet: template for functional component"
+			],
+			[
+				"term",
+				"Preferences: Terminus Settings"
+			],
+			[
+				"ter",
+				"Terminus: Open Default Shell in Panel"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"git push",
+				"Git: Push"
+			],
+			[
+				"git ch",
+				"git: checkout"
+			],
+			[
+				"package control install package",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
+			],
+			[
+				"LiveReload: Enable/disable plugins",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"livere",
+				"LiveReload: Enable/disable plug-ins"
+			],
+			[
+				"Package Con",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: Install",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Cont",
+				"Package Control: List Packages"
+			]
+		],
+		"width": 425.0
+	},
+	"console":
+	{
+		"height": 211.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/terry/myProjects/flavortown-api"
+	],
+	"file_history":
+	[
+		"/home/terry/myProjects/flavortown-api/db.js",
+		"/home/terry/myProjects/flavortown-api/index.js",
+		"/home/terry/myProjects/flavortown/src/styles/editor.css",
+		"/home/terry/myProjects/flavortown/src/components/itemSelect.js",
+		"/home/terry/myProjects/flavortown/src/components/simpleModal.js",
+		"/home/terry/myProjects/flavortown/src/components/affinitySelect.js",
+		"/home/terry/myProjects/flavortown/src/apiCalls.js",
+		"/home/terry/myProjects/flavortown/src/components/itemsListFull.js",
+		"/home/terry/myProjects/flavortown/src/pages/FlavorFinder.js",
+		"/home/terry/myProjects/flavortown/src/styles/tags.css",
+		"/home/terry/myProjects/flavortown/src/styles/itemSelect.css",
+		"/home/terry/myProjects/flavortown/src/components/TagsBox.js",
+		"/home/terry/myProjects/flavortown/src/styles/friends.css",
+		"/home/terry/myProjects/flavortown/src/pages/Editor.js",
+		"/home/terry/myProjects/flavortown/src/app.js",
+		"/home/terry/myProjects/flavortown/src/components/modal.js",
+		"/home/terry/myProjects/flavortown/src/utilities/cats.js",
+		"/home/terry/myProjects/flavortown/src/components/newItem.js",
+		"/home/terry/myProjects/flavortown/src/styles/itemEntry.css",
+		"/home/terry/myProjects/flavortown/src/pages/editor.js",
+		"/home/terry/myProjects/flavortown/src/styles/selectStyles.css",
+		"/home/terry/myProjects/flavortown/src/components/itemEdit.js",
+		"/home/terry/myProjects/flavortown/src/styles/App.css",
+		"/home/terry/myProjects/flavortown/public/index.html",
+		"/home/terry/myProjects/flavortown/src/pages/testPage.js",
+		"/home/terry/myProjects/flavortown/src/styles/Tags.css",
+		"/home/terry/myProjects/flavortown/src/utilities/data.js",
+		"/home/terry/myProjects/flavortown/src/pages/createDish.js",
+		"/home/terry/myProjects/flavortown/src/components/mutualFriendsList.js",
+		"/home/terry/myProjects/flavortown/src/components/autocomplete.js",
+		"/home/terry/myProjects/flavortown/src/pages/enterPairing.js",
+		"/home/terry/myProjects/flavortown/src/styles/autocomplete.css",
+		"/home/terry/myProjects/flavortown/src/images/edit_pencil.svg",
+		"/home/terry/myProjects/flavortown/src/components/navbar.js",
+		"/home/terry/myProjects/flavortown/src/components/itemsList.js",
+		"/home/terry/myProjects/flavortown/src/styles/index.css",
+		"/home/terry/myProjects/flavortown/src/index.js",
+		"/home/terry/myProjects/flavortown/src/pages/../styles/pairings.css",
+		"/home/terry/myProjects/flavortown/src/styles/pairings.css",
+		"/home/terry/myProjects/flavortown/node_modules/react-bootstrap-autosuggest/src/Autosuggest.scss",
+		"/home/terry/myProjects/flavortown/src/components/itemCard.js",
+		"/home/terry/myProjects/flavortown/src/components/autocomplete_basic.js",
+		"/home/terry/myProjects/flavortown/src/styles/reactTags.css",
+		"/home/terry/myProjects/flavortown/src/components/tagsInput_2.js",
+		"/home/terry/myProjects/flavortown/src/components/tagsInput.js",
+		"/home/terry/myProjects/flavortown/src/template.js",
+		"/home/terry/myProjects/flavortown/src/flavortown-api.sublime-project",
+		"/home/terry/myProjects/flavortown-api/.env",
+		"/home/terry/myProjects/flavortown/README.md",
+		"/home/terry/myProjects/wesbos/01 - JavaScript Drum Kit/test.html",
+		"/home/terry/myProjects/wesbos/01 - JavaScript Drum Kit/index.html",
+		"/home/terry/.config/sublime-text-3/Packages/User/Terminal.sublime-settings",
+		"/home/terry/.config/sublime-text-3/Packages/User/Default (Linux).sublime-keymap",
+		"/home/terry/.config/sublime-text-3/Packages/BrowserIntegration/BrowserIntegration.sublime-settings",
+		"/home/terry/myProjects/wesbos/01 - JavaScript Drum Kit/sounds/test.html",
+		"/home/terry/myProjects/wesbos/01 - JavaScript Drum Kit/index-START.html",
+		"/home/terry/browser sync",
+		"/home/terry/.config/sublime-text-3/Packages/User/chrome.sublime-build",
+		"/home/terry/.config/sublime-text-3/Packages/User/Chrome.sublime-build",
+		"/home/terry/Downloads/doctolib-test/node_modules/babel-cli/lib/babel/dir.js",
+		"/home/terry/Downloads/doctolib-test/package.json",
+		"/home/terry/exercism/javascript/collatz-conjecture/collatz-conjecture.js",
+		"/home/terry/exercism/javascript/collatz-conjecture/collatz-conjecture.spec.js",
+		"/home/terry/exercism/javascript/triangle/triangle.js",
+		"/home/terry/exercism/javascript/triangle/triangle.spec.js",
+		"/home/terry/exercism/javascript/reverse-string/reverse-string.js",
+		"/home/terry/exercism/javascript/reverse-string/reverse-string.spec.js",
+		"/home/terry/exercism/javascript/resistor-color-duo/resistor-color-duo.js",
+		"/home/terry/exercism/javascript/resistor-color-duo/resistor-color-duo.spec.js",
+		"/home/terry/exercism/javascript/leap/leap.spec.js",
+		"/home/terry/exercism/javascript/leap/leap.js",
+		"/home/terry/exercism/javascript/resistor-color/resistor-color.spec.js",
+		"/home/terry/exercism/javascript/resistor-color/resistor-color.js",
+		"/home/terry/exercism/javascript/two-fer/two-fer.spec.js",
+		"/home/terry/exercism/javascript/roman-numerals/roman-numerals.spec.js",
+		"/home/terry/exercism/javascript/roman-numerals/roman-numerals.js",
+		"/home/terry/exercism/javascript/hello-world/hello-world.spec.js",
+		"/home/terry/exercism/javascript/two-fer/two-fer.js",
+		"/home/terry/exercism/javascript/hello-world/hello-world.js",
+		"/home/terry/exercism/javascript/package.json",
+		"/home/terry/myProjects/tester/webpack.common.js",
+		"/home/terry/myProjects/tester/.storybook/webpack.config.js",
+		"/home/terry/myProjects/tester/src/components/Sandbox/sandbox.stories.js",
+		"/home/terry/myProjects/tester/src/lib/sandbox.stories.js",
+		"/home/terry/myProjects/tester/src/lib/structures.js",
+		"/home/terry/myProjects/tester/src/lib/structures.stories.js",
+		"/home/terry/myProjects/tester/package.json",
+		"/home/terry/myProjects/tester/.storybook/config.js",
+		"/home/terry/myProjects/tester/src/lib/structures.test.js",
+		"/home/terry/myProjects/tester/src/lib/math.test.js",
+		"/home/terry/myProjects/tester/src/lib/math.js",
+		"/home/terry/myProjects/tester/src/lib/sorting.test.js",
+		"/home/terry/myProjects/tester/src/lib/sorting.js",
+		"/home/terry/myProjects/tester/src/lib/katas.test.js",
+		"/home/terry/myProjects/tester/src/lib/katas.js",
+		"/home/terry/myProjects/react-starter/src/routes/App/index.js",
+		"/home/terry/myProjects/react-starter/test/enzyme.setup.js",
+		"/home/terry/myProjects/react-starter/src/store/appReducer.js",
+		"/home/terry/myProjects/react-starter/webpack.common.js",
+		"/home/terry/myProjects/react-starter/package.json",
+		"/home/terry/myProjects/react-starter/webpack.dev.js",
+		"/home/terry/myProjects/webpack-hell/src/index.js",
+		"/home/terry/myProjects/webpack-hell/src/style.css",
+		"/home/terry/myProjects/webpack-hell/dist/print.bundle.js",
+		"/home/terry/myProjects/webpack-hell/src/print.js",
+		"/home/terry/myProjects/webpack-hell/src/template.html",
+		"/home/terry/myProjects/webpack-hell/webpack.config.js",
+		"/home/terry/myProjects/webpack-hell/src/assets/print.js",
+		"/home/terry/myProjects/webpack-hell/package.json",
+		"/home/terry/myProjects/webpack-hell/dist/index.html",
+		"/home/terry/myProjects/webpack-hell/index.html",
+		"/home/terry/myProjects/react-starter/dist/index.html",
+		"/home/terry/myProjects/react-starter/webpack.prod.js",
+		"/home/terry/myProjects/react-starter/src/store/index.js",
+		"/home/terry/myProjects/react-starter/src/routes/App/App.test.js",
+		"/home/terry/myProjects/react-starter/.babelrc",
+		"/home/terry/myProjects/react-starter/src/store/AppReducer.test.js",
+		"/home/terry/myProjects/react-starter/src/index.html",
+		"/home/terry/myProjects/react-starter/index.template.html",
+		"/home/terry/myProjects/react-starter/src/actions/appActions.js",
+		"/home/terry/myProjects/react-starter/src/components/App/index.js",
+		"/home/terry/myProjects/react-starter/src/entry.js",
+		"/home/terry/myProjects/react-starter/src/actions/types.js",
+		"/home/terry/myProjects/react-starter/src/components/App/App.test.js",
+		"/home/terry/myProjects/react-starter/src/lib/math.test.js",
+		"/home/terry/myProjects/react-starter/src/lib/math.js",
+		"/home/terry/myProjects/react-starter/test/App.test.js",
+		"/home/terry/myProjects/react-starter/src/styles/project.scss"
+	],
+	"find":
+	{
+		"height": 41.0
+	},
+	"find_in_files":
+	{
+		"height": 181.5,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": false,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": false
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "index.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 9904,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5020,
+								5020
+							]
+						],
+						"settings":
+						{
+							"bs_sintax": "javascript (babel)",
+							"buffer_scroll_name": "92ee7b84",
+							"git_gutter_is_enabled": true,
+							"spell_check": false,
+							"syntax": "Packages/Babel/JavaScript (Babel).sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1710.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 41.0
+	},
+	"input":
+	{
+		"height": 65.6666666667
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.Terminus":
+	{
+		"height": 184.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.git":
+	{
+		"height": 134.0
+	},
+	"output.mdpopups":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/User/Chrome.sublime-build",
+	"project": "api.sublime-project",
+	"replace":
+	{
+		"height": 78.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 376.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

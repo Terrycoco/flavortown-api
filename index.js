@@ -45,6 +45,22 @@ app.get('/items', (req, res, next) => {
     })
 });
 
+//all items - exclude combos
+app.get('/itemsfiltered/:filter', (req, res, next) => {
+  const array = JSON.parse(req.params.filter); //convert to array
+  console.log('items passed', array, Array.isArray(array));
+  const str = array.join(",");
+  const sql = "select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
+   console.log(sql);
+   db.any(sql) 
+    .then(data => {
+      res.send(data);
+    })
+    .catch(error => {
+      console.log('ERROR 44', error);
+    })
+});
+
 //all cats
 app.get('/cats', (req, res, next) => {
    db.any('select * from cats  ORDER BY cat') 
@@ -79,7 +95,7 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
 app.post("/items/new", (req, res, next) => {
   const {item, cat_id} = req.body; 
   console.log('addding item: ', item, 'cat_id:', cat_id);            
-  db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id as id, item as name", [item, cat_id])
+  db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id as id, item as name, main_cat_id as cat_id", [item, cat_id])
     .then(data => {
       console.log('item added:', data);
       res.send(data);
@@ -125,28 +141,55 @@ app.post("/item/delete", (req, res, next) => {
 
 //insert new pairing - or edit affinity-level
 app.post("/pairing/new", (req, res, next) => {
+  console.log('adding: ', req.body);
   const {item1_id, item2_id, level=1} = req.body;
-  const lesser = Math.min(item1_id, item2_id);
-  const greater = Math.max(item1_id, item2_id);              
-  db.none("INSERT INTO pairings(item1_id, item2_id, affinity_level) VALUES ($1, $2, $3) ON CONFLICT (item1_id, item2_id) DO UPDATE set affinity_level = $3;", [lesser, greater, level])
-    .then(() => {
-      res.end();
+  let sql, i1, i2;
+  let params;
+
+  if (parseInt(level) === -2) {
+    i1= item1_id;
+    i2=item2_id;
+    params= [i1, i2];
+    sql = "INSERT INTO families(parent_id, child_id) VALUES ($1, $2) ON CONFLIECT (parent_id, child_id) DO NOTHING";
+  } else {
+     i1 = Math.min(item1_id, item2_id);
+     i2 = Math.max(item1_id, item2_id); 
+     params = [i1, i2,level];       
+    sql = "INSERT INTO pairings(item1_id, item2_id, affinity_level) VALUES ($1, $2, $3) ON CONFLICT (key_unique) DO UPDATE set affinity_level = $3";
+  }
+  console.log('sql: ', sql);
+   db.none(sql, params)
+   .then(() => {
+    console.log('pairing added');
+    res.end();
    })
-    .catch((error) => {
-       //fallback
-       if (error.constraint === 'unique_pairings') {
-         return db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [lesser, greater, level])
+    .catch((err) => {
+      console.log('error fallback')
+       if (parseInt(level) > -2 && error.constraint === 'unique_pairings') {
+         return db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [i1, i2, level])
           .then(() => { 
              res.end();
              return;
          })
  
        } else {
-        console.error('ERROR 88', error.detail);
+        console.error('ERROR 154', err.message);
 
         res.end();
        
         }
+   })
+
+});
+
+app.post("/merge", (req, res, next) => {
+   const {keep, lose} = req.body;
+   db.none("CALL sp_merge_items($1, $2)", [keep, lose])
+   .then(() => {
+      res.end();
+   })
+   .catch( err => {
+      console.error(err.message);
    })
 });
 
