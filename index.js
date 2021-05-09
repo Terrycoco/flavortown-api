@@ -36,7 +36,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
+   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
     .then(data => {
       res.send(data);
     })
@@ -50,7 +50,7 @@ app.get('/itemsfiltered/:filter', (req, res, next) => {
   const array = JSON.parse(req.params.filter); //convert to array
   console.log('items passed', array, Array.isArray(array));
   const str = array.join(",");
-  const sql = "select item_id as id, item as name, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
+  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
    console.log(sql);
    db.any(sql) 
     .then(data => {
@@ -72,11 +72,11 @@ app.get('/cats', (req, res, next) => {
     })
 });
 
-//get items for one cat
+//get items for one cat (no children) for initial FF
 app.get("/itemsbycat/:catId", (req, res, next) => {
   const cat_id = req.params.catId;
   if (cat_id) {
-    db.any("select item_id as id, item as name, main_cat_id as cat_id from items where main_cat_id = $1 order by item;", [cat_id])
+    db.any("select id, name, is_parent, cat_id from items_no_children where cat_id = $1 order by name;", [cat_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
@@ -88,8 +88,6 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
     })
 }
 });
-
-
 
 //insert new item
 app.post("/items/new", (req, res, next) => {
@@ -143,43 +141,38 @@ app.post("/item/delete", (req, res, next) => {
 app.post("/pairing/new", (req, res, next) => {
   console.log('adding: ', req.body);
   const {item1_id, item2_id, level=1} = req.body;
-  let sql, i1, i2;
-  let params;
+  let sql;
 
-  if (parseInt(level) === -2) {
-    i1= item1_id;
-    i2=item2_id;
-    params= [i1, i2];
-    sql = "INSERT INTO families(parent_id, child_id) VALUES ($1, $2) ON CONFLIECT (parent_id, child_id) DO NOTHING";
-  } else {
-     i1 = Math.min(item1_id, item2_id);
-     i2 = Math.max(item1_id, item2_id); 
-     params = [i1, i2,level];       
-    sql = "INSERT INTO pairings(item1_id, item2_id, affinity_level) VALUES ($1, $2, $3) ON CONFLICT (key_unique) DO UPDATE set affinity_level = $3";
-  }
-  console.log('sql: ', sql);
-   db.none(sql, params)
-   .then(() => {
-    console.log('pairing added');
-    res.end();
-   })
-    .catch((err) => {
-      console.log('error fallback')
-       if (parseInt(level) > -2 && error.constraint === 'unique_pairings') {
-         return db.none("UPDATE pairings set affinity_level = $3 where (item1_id = $1 and item2_id = $2) OR (item2_id = $1 and item1_id = $2);", [i1, i2, level])
-          .then(() => { 
-             res.end();
-             return;
-         })
- 
-       } else {
-        console.error('ERROR 154', err.message);
-
+  //child - only add once
+    if (parseInt(level) === 0) {
+      let parent = item1_id;
+      let child =item2_id;
+      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, 0) ON CONFLICT (item_id, friend_id) DO NOTHING";
+      db.none(sql, [parent, child])
+      .then(() => {
+        db.none("UPDATE items SET is_parent = true where item_id = $1", [parent])
+      })
+      .then(() => {
+        console.log('child added');
         res.end();
-       
-        }
-   })
+      })
 
+  //not parent child (must add twice)
+  } else {   
+    sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT  (item_id, friend_id) DO UPDATE set friend_type = $3";
+    db.none(sql, [item1_id, item2_id, level])
+    .then(() => {
+      db.none(sql, [item2_id, item1_id, level])
+      .then(() => {
+        console.log('pairing added');
+        res.end();
+       })
+    })
+    .catch((err) => {
+      console.error('ERROR 154', err.message);
+      res.end();
+    })
+  }//end if
 });
 
 app.post("/merge", (req, res, next) => {
@@ -199,13 +192,13 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
   const item_id = req.params.itemId;
  
   if (item_id) {
-    db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and affinity_level = 5", [item_id])
+    db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and friend_type = 5", [item_id])
     .then(ingreds => {
 
     if (ingreds.length > 1) {
        let i;
        let inner;
-       let sql = "INSERT into pairings (item1_id, item2_id) VALUES ";
+       let sql = "INSERT into friends (item_id, friend_id) VALUES ";
 
 
        for (i=0; i < ingreds.length - 1; i++) {
@@ -222,7 +215,7 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
         
          //removelast comma
          sql = sql.slice(0, -1);
-         sql = sql + ' ON CONFLICT DO NOTHING';
+         sql = sql + ' ON CONFLICT (item_id, friend_id) DO NOTHING';
           console.log('ending sql', sql);
 
           return db.any(sql)
@@ -255,28 +248,29 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
 //delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
   const {item1_id, item2_id } = req.body;           
-  db.none("DELETE from pairings WHERE (item1_id = $1 AND item2_id = $2) OR (item2_id = $1 AND item1_id = $2);", [item1_id, item2_id])
+  db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
     .then(() => {
       res.end();
    })
     .catch((error) => {
        //fallback
         console.error('ERROR 88', error.detail);
-
         res.end();
-
    })
 });
 
 
 
-//get friends
+//get friends - editor
 app.get("/friends/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
+  let sql;
   if (item_id) {
-    db.any("select friend_id as id, friend as name, affinity_level from all_friends_vw where item_id = $1 order by friend;", [item_id])
+    sql = "select friend_id as id, friend as name, friend_type, friend_is_parent as is_parent from all_friends_vw where item_id = $1 order by friend";
+    console.log(sql);
+    db.any(sql, [item_id])
     .then(data => {
-      //console.log('data: ', data);
+      console.log('data: ', data);
       res.send(data);
     })
     .catch(error => {
@@ -291,7 +285,7 @@ app.get("/friends/:itemId", (req, res, next) => {
 app.get("/ingreds/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   if (item_id) {
-    db.any("select friend_id as id, friend as name, affinity_level from all_friends_vw where item_id = $1 and affinity_level=5 order by friend;", [item_id])
+    db.any("select friend_id as id, friend as name, friend_type from all_friends_vw where item_id = $1 and affinity_level=5 order by friend;", [item_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
@@ -304,16 +298,14 @@ app.get("/ingreds/:itemId", (req, res, next) => {
 }
 });
 
-
-
-//mutual friends
+//mutual friends - FF
 app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('items passed', array, Array.isArray(array));
 
-  let sql = `select friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(affinity_level) as min_affinity from friends_with_cats_vw`;
+  let sql = `select friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(friend_type) as friend_type, friend_is_parent as is_parent from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
-  let groupclause = " and affinity_level > 0 GROUP BY friend_cat, friend_cat_id, friend_id, friend ";
+  let groupclause = " GROUP BY friend_cat, friend_cat_id, friend_id, friend, friend_is_parent ";
   let orderclause = " ORDER BY friend_cat, friend ";
 
   if (!Array.isArray(array) || !array.length) {
@@ -333,10 +325,10 @@ app.get("/mutual/:items", (req, res, next) => {
       //console.log('data: ', data);
       res.send(data);
     })
-    .catch(error => {
+    .catch(err => {
        //TODO: better error handling - how to send error to user?
-        console.error('ERROR 179', error.detail);
-        res.send(error.detail);
+        console.error('ERROR 331', err.message);
+        res.send(err.message);
     })
 });
 
