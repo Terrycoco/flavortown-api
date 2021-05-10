@@ -245,7 +245,7 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
   }
 });
 
-app.post("/updparent" (req, res, next) => {
+app.post("/updparent", (req, res, next) => {
    const {item_id} = req.body;
    db.none("CALL sp_update_parent($1)" , [item_id])
    .then(() => {
