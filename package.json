@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./index.js",
-    "dev": "nodemon ./index.js",
-    "predev": "export EXPRESS_PORT=5000 && heroku config:get DATABASE_URL -a flavorworld-api > .env"
+    "dev": "nodemon ./index.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +21,10 @@
     "bluebird": "^3.7.2",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "http-errors": "^1.7.2",
     "pg-promise": "^10.10.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
   }
 }

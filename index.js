@@ -2,10 +2,13 @@ const express = require('express');
 const cors = require("cors");
 const app = express();
 const db = require("./db.js");
+const createError = require('http-errors');
 
 //middleware
 app.use(express.json());
 app.use(cors());
+
+
 
 let PORT = process.env.PORT || 5000;
 if (process.env.NODE_ENV == 'development') {
@@ -30,18 +33,18 @@ app.get('/testdb', async(req, res) => {
      const testdb = await testConnection()
      res.send(testdb);
   } catch (err) {
-    console.error(err.message);
+    throw createError(500, {message: err.message});
   }
 });
 
-//all items
+//all items -- for editor
 app.get('/items', (req, res, next) => {
    db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
     .then(data => {
       res.send(data);
     })
-    .catch(error => {
-      console.log('ERROR 44', error);
+    .catch(err => {
+       throw createError(500, {message: err.message});
     })
 });
 
@@ -56,8 +59,8 @@ app.get('/itemsfiltered/:filter', (req, res, next) => {
     .then(data => {
       res.send(data);
     })
-    .catch(error => {
-      console.log('ERROR 44', error);
+    .catch(err => {
+       throw createError(500, {message: err.message});
     })
 });
 
@@ -67,8 +70,8 @@ app.get('/cats', (req, res, next) => {
     .then(data => {
       res.send(data);
     })
-    .catch(error => {
-      console.log('ERROR 55', error);
+    .catch(err => {
+       throw createError(500, {message: err.message});
     })
 });
 
@@ -81,10 +84,8 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
       //console.log('data: ', data);
       res.send(data);
     })
-    .catch(error => {
-       //TODO: better error handling - how to send error to user?
-        console.error('ERROR 103', error.detail);
-        res.send(error.detail);
+    .catch(err => {
+        throw createError(500, {message: err.message});
     })
 }
 });
@@ -98,10 +99,8 @@ app.post("/items/new", (req, res, next) => {
       console.log('item added:', data);
       res.send(data);
    })
-    .catch(error => {
-      //TODO: better error handling - how to send error to user?
-      console.error('ERROR 70 trying to insert item:', req.body, error.detail);
-      res.send(error.detail);
+    .catch(err => {
+       throw createError(500, {message: err.message});
     })
 });
 
@@ -115,9 +114,7 @@ app.post("/item/edit", (req, res, next) => {
       res.end();
    })
     .catch(err => {
-      //TODO: better error handling - how to send error to user?
-      console.error('ERROR 105 trying to update item:', req.body, err.message);
-      res.send(err.message);
+       throw createError(500, {message: err.message});
     })
 });
 
@@ -131,9 +128,7 @@ app.post("/item/delete", (req, res, next) => {
       res.end();
    })
     .catch(err => {
-      //TODO: better error handling - how to send error to user?
-      console.error('ERROR 121 trying to update item:', req.body, err.message);
-      res.error(err.message);
+      throw createError(500, {message: err.message});
     })
 });
 
@@ -169,8 +164,7 @@ app.post("/pairing/new", (req, res, next) => {
        })
     })
     .catch((err) => {
-      console.error('ERROR 154', err.message);
-      res.end();
+       throw createError(500, {message: err.message});
     })
   }//end if
 });
@@ -182,7 +176,7 @@ app.post("/merge", (req, res, next) => {
       res.end();
    })
    .catch( err => {
-      console.error(err.message);
+       throw createError(500, {message: err.message});
    })
 });
 
@@ -228,7 +222,7 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
             return;
           })
           .catch(err => {
-            console.error(err.detail);
+             throw createError(500, {message: err.message});
           });
       
     } else {
@@ -237,7 +231,7 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
     }
   })
   .catch(err => {
-     res.send(err.detail);
+     throw createError(500, {message: err.message});
   });
   } else {
     //do nothing
@@ -245,14 +239,32 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
   }
 });
 
+//update specific parent to fetch its kids friends
 app.post("/updparent", (req, res, next) => {
+
+
    const {item_id} = req.body;
-   db.none("CALL sp_update_parent($1)" , [item_id])
-   .then(() => {
-      res.end();
+   console.log('updating parent', item_id);
+   db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type = 0", [item_id])
+   .then(data => {
+      console.log('data:', data.childcount)
+      if (data.childcount === '0') {
+          let err = new Error('Not a parent');
+          err.status = 400;  //bad user request
+          next(err); //go to nearest handler
+      } else {
+        db.none("CALL sp_update_parent($1)" , [item_id])
+          .then(() => {
+            db.none("UPDATE items set is_parent = 1 where item_id = $1", [item_id])
+            .then(() => {
+               res.end();
+            })
+          })
+      }
    })
    .catch( err => {
-    console.error(err.message)
+    console.log('got here');
+    next(err);
    })
 });
 
@@ -263,10 +275,8 @@ app.post("/pairing/delete", (req, res, next) => {
     .then(() => {
       res.end();
    })
-    .catch((error) => {
-       //fallback
-        console.error('ERROR 88', error.detail);
-        res.end();
+    .catch((err) => {
+       throw createError(500, {message: err.message});
    })
 });
 
@@ -279,13 +289,11 @@ app.get("/friends/:itemId", (req, res, next) => {
     console.log(sql);
     db.any(sql, [item_id])
     .then(data => {
-      console.log('data: ', data);
+     // console.log('data: ', data);
       res.send(data);
     })
-    .catch(error => {
-       //TODO: better error handling - how to send error to user?
-        console.error('ERROR 103', error.detail);
-        res.send(error.detail);
+    .catch(err => {
+        throw createError(500, {message: err.message});
     })
 }
 });
@@ -299,10 +307,8 @@ app.get("/ingreds/:itemId", (req, res, next) => {
       //console.log('data: ', data);
       res.send(data);
     })
-    .catch(error => {
-       //TODO: better error handling - how to send error to user?
-        console.error('ERROR 103', error.detail);
-        res.send(error.detail);
+    .catch(err => {
+     throw createError(500, {message: err.message});
     })
 }
 });
@@ -335,10 +341,23 @@ app.get("/mutual/:items", (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-       //TODO: better error handling - how to send error to user?
-        console.error('ERROR 331', err.message);
-        res.send(err.message);
+      throw(createError(500, {message: err.message}));
     })
+});
+
+
+//no route found push to handler
+app.use((req, res, next) => {
+ const error = new Error("Not found")
+ error.status = 404;
+ next(error);
+});
+
+
+// error handler middleware
+app.use((error, req, res, next) => {
+  console.log('caught', error);
+  res.status(error.status).json({message: error.message});
 });
 
 
