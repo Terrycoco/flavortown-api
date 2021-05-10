@@ -19,7 +19,7 @@
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 9776,
+				"buffer_size": 9917,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -285,15 +285,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9776,
+						"buffer_size": 9917,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6928,
-								6928
+								6502,
+								6502
 							]
 						],
 						"settings":
@@ -307,7 +307,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2368.0,
+						"translation.y": 2486.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -349,7 +349,7 @@
 	"menu_visible": true,
 	"output.Terminus":
 	{
-		"height": 184.0
+		"height": 489.0
 	},
 	"output.find_results":
 	{

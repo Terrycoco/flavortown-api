@@ -207,14 +207,17 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
 
            for (inner=i+1; inner < ingreds.length; inner++) {
 
-            // console.log('got here inner is:', inner);
+            // double insert both item and friend
               sql = sql + "(" + ingreds[i].id + "," + ingreds[inner].id + "),";
+              sql = sql + "(" + ingreds[inner].id + "," + ingreds[i].id + "),";
            }
         }
 
         
          //removelast comma
          sql = sql.slice(0, -1);
+
+
          sql = sql + ' ON CONFLICT (item_id, friend_id) DO NOTHING';
           console.log('ending sql', sql);
 
@@ -236,14 +239,22 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
   .catch(err => {
      res.send(err.detail);
   });
-
-} else {
-  //do nothing
-  res.end();
-}
-
+  } else {
+    //do nothing
+    res.end();
+  }
 });
 
+app.post("/updparent" (req, res, next) => {
+   const {item_id} = req.body;
+   db.none("CALL sp_update_parent($1)" , [item_id])
+   .then(() => {
+      res.end();
+   })
+   .catch( err => {
+    console.error(err.message)
+   })
+});
 
 //delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
@@ -258,8 +269,6 @@ app.post("/pairing/delete", (req, res, next) => {
         res.end();
    })
 });
-
-
 
 //get friends - editor
 app.get("/friends/:itemId", (req, res, next) => {
