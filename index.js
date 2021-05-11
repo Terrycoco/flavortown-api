@@ -241,11 +241,9 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
 
 //update specific parent to fetch its kids friends
 app.post("/updparent", (req, res, next) => {
-
-
    const {item_id} = req.body;
    console.log('updating parent', item_id);
-   db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type = 0", [item_id])
+   return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type = 0", [item_id])
    .then(data => {
       console.log('data:', data.childcount)
       if (data.childcount === '0') {
@@ -253,7 +251,7 @@ app.post("/updparent", (req, res, next) => {
           err.status = 400;  //bad user request
           next(err); //go to nearest handler
       } else {
-        db.none("CALL sp_update_parent($1)" , [item_id])
+        return db.none("CALL sp_update_parent($1)" , [item_id])
           .then(() => {
             db.none("UPDATE items set is_parent = 1 where item_id = $1", [item_id])
             .then(() => {
