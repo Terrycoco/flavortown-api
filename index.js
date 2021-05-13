@@ -39,7 +39,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items -- for editor
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
+   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, hide_children, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
     .then(data => {
       res.send(data);
     })
@@ -48,19 +48,19 @@ app.get('/items', (req, res, next) => {
     })
 });
 
-//all items - exclude combos
+//for editor dropboxes
 app.get('/itemsfiltered/:filter', (req, res, next) => {
   const array = JSON.parse(req.params.filter); //convert to array
   console.log('items passed', array, Array.isArray(array));
   const str = array.join(",");
-  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
-   console.log(sql);
+  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat, hide_children from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
+   console.log('filter sql',sql);
    db.any(sql) 
     .then(data => {
       res.send(data);
     })
     .catch(err => {
-       throw createError(500, {message: err.message});
+       next(err);
     })
 });
 
@@ -79,7 +79,7 @@ app.get('/cats', (req, res, next) => {
 app.get("/itemsbycat/:catId", (req, res, next) => {
   const cat_id = req.params.catId;
   if (cat_id) {
-    db.any("select id, name, is_parent, cat_id from items_no_children where cat_id = $1 order by name;", [cat_id])
+    db.any("select id, name, is_parent, hide_children, cat_id, is_child from items_hide_children where cat_id = $1 order by sorter, name;", [cat_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
@@ -105,16 +105,17 @@ app.post("/items/new", (req, res, next) => {
 });
 
 //insert new item
-app.post("/item/edit", (req, res, next) => {
-  const {item_id, cat_id, item} = req.body; 
-  console.log('editing item: ', item, 'cat_id:', cat_id);            
-  db.none("UPDATE items set item = $1, main_cat_id = $2 WHERE item_id = $3", [item, cat_id, item_id] )
+app.post("/upditem", (req, res, next) => {
+  console.log(req.body);
+  const {id, name, is_parent, cat_id, hide_children} = req.body;
+  console.log('editing item: ', id);           
+  db.none("UPDATE items set item = $1, main_cat_id = $2, is_parent= $3, hide_children=$4  WHERE item_id = $5", [name, cat_id, is_parent, hide_children, id] )
     .then(() => {
       console.log('item updated:', req.body);
       res.end();
    })
     .catch(err => {
-       throw createError(500, {message: err.message});
+       next(err);
     })
 });
 
@@ -145,7 +146,7 @@ app.post("/pairing/new", (req, res, next) => {
       sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, 0) ON CONFLICT (item_id, friend_id) DO NOTHING";
       db.none(sql, [parent, child])
       .then(() => {
-        db.none("UPDATE items SET is_parent = true where item_id = $1", [parent])
+        db.none("UPDATE items SET is_parent = 1 where item_id = $1", [parent])
       })
       .then(() => {
         console.log('child added');
@@ -284,7 +285,7 @@ app.get("/friends/:itemId", (req, res, next) => {
   let sql;
   if (item_id) {
     sql = "select friend_id as id, friend as name, friend_type, friend_is_parent as is_parent from all_friends_vw where item_id = $1 order by friend";
-    console.log(sql);
+    //console.log(sql);
     db.any(sql, [item_id])
     .then(data => {
      // console.log('data: ', data);
@@ -314,12 +315,12 @@ app.get("/ingreds/:itemId", (req, res, next) => {
 //mutual friends - FF
 app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
-  console.log('items passed', array, Array.isArray(array));
+  console.log('fetching friends for ', array, Array.isArray(array));
 
-  let sql = `select friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(friend_type) as friend_type, friend_is_parent as is_parent from friends_with_cats_vw`;
+  let sql = `select friend_sorter, friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(friend_type) as friend_type, friend_is_parent as is_parent, friend_is_child as is_child, friend_hide_children as hide_children from friends_with_cats_vw`;
   let whereclause = ' WHERE item_id IN(';
-  let groupclause = " GROUP BY friend_cat, friend_cat_id, friend_id, friend, friend_is_parent ";
-  let orderclause = " ORDER BY friend_cat, friend ";
+  let groupclause = " GROUP BY friend_sorter, friend_cat, friend_cat_id, friend_id, friend, friend_is_parent, friend_is_child, friend_hide_children ";
+  let orderclause = " ORDER BY friend_sorter, friend_cat, friend ";
 
   if (!Array.isArray(array) || !array.length) {
   // array does not exist, is not an array, or is empty
@@ -339,7 +340,7 @@ app.get("/mutual/:items", (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-      throw(createError(500, {message: err.message}));
+      next(err);
     })
 });
 

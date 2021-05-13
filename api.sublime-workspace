@@ -19,7 +19,7 @@
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 10225,
+				"buffer_size": 10595,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -114,6 +114,7 @@
 	],
 	"file_history":
 	[
+		"/home/terry/myProjects/flavortown-api/package.json",
 		"/home/terry/myProjects/flavortown-api/db.js",
 		"/home/terry/myProjects/flavortown-api/index.js",
 		"/home/terry/myProjects/flavortown/src/styles/editor.css",
@@ -240,8 +241,7 @@
 		"/home/terry/myProjects/react-starter/src/components/App/App.test.js",
 		"/home/terry/myProjects/react-starter/src/lib/math.test.js",
 		"/home/terry/myProjects/react-starter/src/lib/math.js",
-		"/home/terry/myProjects/react-starter/test/App.test.js",
-		"/home/terry/myProjects/react-starter/src/styles/project.scss"
+		"/home/terry/myProjects/react-starter/test/App.test.js"
 	],
 	"find":
 	{
@@ -285,15 +285,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10225,
+						"buffer_size": 10595,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								5358,
-								5358
+								7398,
+								7398
 							]
 						],
 						"settings":
@@ -307,7 +307,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 2101.0,
+						"translation.y": 5611.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -349,7 +349,7 @@
 	"menu_visible": true,
 	"output.Terminus":
 	{
-		"height": 489.0
+		"height": 289.0
 	},
 	"output.find_results":
 	{
@@ -405,7 +405,7 @@
 	"show_open_files": true,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 181.0,
+	"side_bar_width": 264.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
