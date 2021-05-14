@@ -33,7 +33,7 @@ app.get('/testdb', async(req, res) => {
      const testdb = await testConnection()
      res.send(testdb);
   } catch (err) {
-    throw createError(500, {message: err.message});
+    next(err);
   }
 });
 
@@ -44,7 +44,7 @@ app.get('/items', (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-       throw createError(500, {message: err.message});
+      next(err);
     })
 });
 
@@ -71,7 +71,7 @@ app.get('/cats', (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-       throw createError(500, {message: err.message});
+       next(err);
     })
 });
 
@@ -85,7 +85,7 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-        throw createError(500, {message: err.message});
+        next(err);
     })
 }
 });
@@ -100,7 +100,7 @@ app.post("/items/new", (req, res, next) => {
       res.send(data);
    })
     .catch(err => {
-       throw createError(500, {message: err.message});
+       next(err);
     })
 });
 
@@ -129,7 +129,7 @@ app.post("/item/delete", (req, res, next) => {
       res.end();
    })
     .catch(err => {
-      throw createError(500, {message: err.message});
+      next(err);
     })
 });
 
@@ -139,15 +139,12 @@ app.post("/pairing/new", (req, res, next) => {
   const {item1_id, item2_id, level=1} = req.body;
   let sql;
 
-  //child - only add once
-    if (parseInt(level) === 0) {
+  //child or ingredient - only add once
+    if (parseInt(level) === 0 || parseInt(level)===5) {
       let parent = item1_id;
       let child =item2_id;
-      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, 0) ON CONFLICT (item_id, friend_id) DO NOTHING";
-      db.none(sql, [parent, child])
-      .then(() => {
-        db.none("UPDATE items SET is_parent = 1 where item_id = $1", [parent])
-      })
+      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT (item_id, friend_id, friend_type) DO NOTHING";
+      db.none(sql, [parent, child, level])
       .then(() => {
         console.log('child added');
         res.end();
@@ -165,7 +162,7 @@ app.post("/pairing/new", (req, res, next) => {
        })
     })
     .catch((err) => {
-       throw createError(500, {message: err.message});
+      next(err);
     })
   }//end if
 });
@@ -177,8 +174,65 @@ app.post("/merge", (req, res, next) => {
       res.end();
    })
    .catch( err => {
-       throw createError(500, {message: err.message});
+      next(err);
    })
+});
+
+//mutual friends - FF
+app.get("/mutual/:items", (req, res, next) => {
+  const array = JSON.parse(req.params.items); //convert to array
+  console.log('fetching friends for ', array, Array.isArray(array));
+  const sql = `
+          select 
+          f.friend_cat_id as cat_id, 
+          f.friend_cat as cat, 
+          f.friend_sorter as sorter, 
+          f.friend_id as "id", 
+          f.friend as "name", 
+          min(f.friend_type) as friend_type,
+          f.friend_is_parent as is_parent,
+          f.friend_hide_children as hide_children,
+          f.friend_is_child as is_child
+          from friends_with_cats_vw f
+          where f.item_id in(select distinct item_id from search_by_vw where search_by = ANY($1))
+          group by
+          f.friend_cat_id, 
+          f.friend_cat,
+          f.friend_sorter, 
+          f.friend_id, 
+          f.friend, 
+          f.friend_is_parent,
+          f.friend_hide_children,
+          f.friend_is_child
+          having count(*) = (select count(distinct item_id) from search_by_vw where search_by  = ANY($1))
+          order by cat, sorter, "name"`;
+
+    db.any(sql, [array])
+    .then(data => {
+     // console.log('data:', data);
+      res.send(data);
+    })
+
+  // if (!Array.isArray(array) || !array.length) {
+  // // array does not exist, is not an array, or is empty
+  // // ⇒ do not attempt to process array
+  //    sql = sql + groupclause + orderclause;
+  //   console.log(sql);
+  //  } else {
+  //    array.forEach((item, index) => {
+  //      whereclause = whereclause + item + ','
+  //    })
+  //    sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(*) = " + array.length + orderclause;
+  //    console.log(sql);
+  //  }
+   // db.any(sql)
+   //  .then(data => {
+   //    //console.log('data: ', data);
+   //    res.send(data);
+   //  })
+    .catch(err => {
+      next(err);
+    })
 });
 
 //update a combo to make sure all ingredients
@@ -240,11 +294,12 @@ app.get("/updcombo/:itemId" , (req, res, next) => {
   }
 });
 
-//update specific parent to fetch its kids friends
+//ROLLUP to parent
 app.post("/updparent", (req, res, next) => {
    const {item_id} = req.body;
    console.log('updating parent', item_id);
-   return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type = 0", [item_id])
+   //must have children 0 or ingredients 5
+   return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type in (0, 5)", [item_id])
    .then(data => {
       console.log('data:', data.childcount)
       if (data.childcount === '0') {
@@ -254,11 +309,8 @@ app.post("/updparent", (req, res, next) => {
       } else {
         return db.none("CALL sp_update_parent($1)" , [item_id])
           .then(() => {
-            db.none("UPDATE items set is_parent = 1 where item_id = $1", [item_id])
-            .then(() => {
                res.end();
-            })
-          })
+        })
       }
    })
    .catch( err => {
@@ -301,47 +353,15 @@ app.get("/friends/:itemId", (req, res, next) => {
 app.get("/ingreds/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   if (item_id) {
-    db.any("select friend_id as id, friend as name, friend_type from all_friends_vw where item_id = $1 and affinity_level=5 order by friend;", [item_id])
+    db.any("select friend_id as id, friend as name, friend_type from all_friends_vw where item_id = $1 and friend_type=5 order by friend;", [item_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
     })
     .catch(err => {
-     throw createError(500, {message: err.message});
+     next(err);
     })
 }
-});
-
-//mutual friends - FF
-app.get("/mutual/:items", (req, res, next) => {
-  const array = JSON.parse(req.params.items); //convert to array
-  console.log('fetching friends for ', array, Array.isArray(array));
-
-  let sql = `select friend_sorter, friend_id as id, friend as name, friend_cat as cat, friend_cat_id as cat_id, min(friend_type) as friend_type, friend_is_parent as is_parent, friend_is_child as is_child, friend_hide_children as hide_children from friends_with_cats_vw`;
-  let whereclause = ' WHERE item_id IN(';
-  let groupclause = " GROUP BY friend_sorter, friend_cat, friend_cat_id, friend_id, friend, friend_is_parent, friend_is_child, friend_hide_children ";
-  let orderclause = " ORDER BY friend_sorter, friend_cat, friend ";
-
-  if (!Array.isArray(array) || !array.length) {
-  // array does not exist, is not an array, or is empty
-  // ⇒ do not attempt to process array
-     sql = sql + groupclause + orderclause;
-    console.log(sql);
-   } else {
-     array.forEach((item, index) => {
-       whereclause = whereclause + item + ','
-     })
-     sql = sql + whereclause.slice(0, -1) + ') ' + groupclause + " HAVING count(*) = " + array.length + orderclause;
-     console.log(sql);
-   }
-   db.any(sql)
-    .then(data => {
-      //console.log('data: ', data);
-      res.send(data);
-    })
-    .catch(err => {
-      next(err);
-    })
 });
 
 
