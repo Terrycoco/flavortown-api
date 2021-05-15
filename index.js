@@ -93,7 +93,7 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
      where main_cat_id = $1
           and hidden = 0
      order by sorter, name;`;
-    console.log(sql);
+  //  console.log(sql);
     db.any(sql, [cat_id])
     .then(data => {
       //console.log('data: ', data);
@@ -179,7 +179,7 @@ app.post("/pairing/new", (req, res, next) => {
         if (validCats.includes(cid)) {
         sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
                 VALUES ($1, $2, $3, $4) 
-                ON CONFLICT (group_id, member_id, friend_type) DO NOTHING`;
+                ON CONFLICT (group_id, member_id, group_type, friend_type) DO NOTHING`;
         db.none(sql, [parent, child, cid, level])
           .then(() => {
              res.end();
@@ -281,96 +281,16 @@ app.get("/mutual/:items", (req, res, next) => {
     })
 });
 
-//update a combo to make sure all ingredients
-//go with eachother as friends
-// app.get("/updcombo/:itemId" , (req, res, next) => {
-//   const item_id = req.params.itemId;
- 
-//   if (item_id) {
-//     db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and friend_type = 5", [item_id])
-//     .then(ingreds => {
-
-//     if (ingreds.length > 1) {
-//        let i;
-//        let inner;
-//        let sql = "INSERT into friends (item_id, friend_id) VALUES ";
-
-
-//        for (i=0; i < ingreds.length - 1; i++) {
-
-//         //console.log(' i is:', i);
-
-//            for (inner=i+1; inner < ingreds.length; inner++) {
-
-//             // double insert both item and friend
-//               sql = sql + "(" + ingreds[i].id + "," + ingreds[inner].id + "),";
-//               sql = sql + "(" + ingreds[inner].id + "," + ingreds[i].id + "),";
-//            }
-//         }
-
-        
-//          //removelast comma
-//          sql = sql.slice(0, -1);
-
-
-//          sql = sql + ' ON CONFLICT (item_id, friend_id) DO NOTHING';
-//           console.log('ending sql', sql);
-
-//           return db.any(sql)
-//           .then(() => {
-//             console.log('done')
-//             res.send('done');
-//             return;
-//           })
-//           .catch(err => {
-//              throw createError(500, {message: err.message});
-//           });
-      
-//     } else {
-//       //do nothing
-//       res.end();
-//     }
-//   })
-//   .catch(err => {
-//      throw createError(500, {message: err.message});
-//   });
-//   } else {
-//     //do nothing
-//     res.end();
-//   }
-// });
-
-// //ROLLUP to parent
-// app.post("/updparent", (req, res, next) => {
-//    const {item_id} = req.body;
-//    console.log('updating parent', item_id);
-//    //must have children 0 or ingredients 5
-//    return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type in (0, 5)", [item_id])
-//    .then(data => {
-//       console.log('data:', data.childcount)
-//       if (data.childcount === '0') {
-//           let err = new Error('Not a parent');
-//           err.status = 400;  //bad user request
-//           next(err); //go to nearest handler
-//       } else {
-//         return db.none("CALL sp_update_parent($1)" , [item_id])
-//           .then(() => {
-//                res.end();
-//         })
-//       }
-//    })
-//    .catch( err => {
-//     console.log('got here');
-//     next(err);
-//    })
-// });
-
 //delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
   const {item1_id, item2_id } = req.body;           
-  db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
+  //delete from both tables
+//  console.log('deleting: ', req.body);
+  return db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
     .then(() => {
-      res.end();
+      return db.none("DELETE from groups WHERE (group_id = $1 AND member_id = $2);", [item1_id, item2_id])
+   }).then(() => {
+    res.end();
    })
     .catch((err) => {
        next(err);
