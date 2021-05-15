@@ -19,7 +19,7 @@
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 10595,
+				"buffer_size": 10914,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
@@ -285,15 +285,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10595,
+						"buffer_size": 10914,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								7398,
-								7398
+								4376,
+								4376
 							]
 						],
 						"settings":
@@ -307,7 +307,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 5611.0,
+						"translation.y": 1800.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,

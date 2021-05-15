@@ -137,17 +137,30 @@ app.post("/item/delete", (req, res, next) => {
 app.post("/pairing/new", (req, res, next) => {
   console.log('adding: ', req.body);
   const {item1_id, item2_id, level=1} = req.body;
+  let parent = item1_id;
+  let child =item2_id;
   let sql;
 
-  //child or ingredient - only add once
-    if (parseInt(level) === 0 || parseInt(level)===5) {
-      let parent = item1_id;
-      let child =item2_id;
+    //child  add once
+    if (parseInt(level) === 0) {
       sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT (item_id, friend_id, friend_type) DO NOTHING";
       db.none(sql, [parent, child, level])
       .then(() => {
-        console.log('child added');
-        res.end();
+           res.end();
+        })
+    
+
+  //ingredient - add once for ingredient, once where sauce the friend of ingred
+    } else if (parseInt(level)===5) {
+
+      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT (item_id, friend_id, friend_type) DO NOTHING";
+      db.none(sql, [parent, child, level])
+      .then(() => {
+        //now add on the ingredient side to link to sauce
+        db.none(sql, [child, parent, 7])
+        .then(() => {
+           res.end();
+        })
       })
 
   //not parent child (must add twice)
@@ -182,32 +195,27 @@ app.post("/merge", (req, res, next) => {
 app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('fetching friends for ', array, Array.isArray(array));
+  const arrlen = array.length;
   const sql = `
           select 
-          f.friend_cat_id as cat_id, 
-          f.friend_cat as cat, 
-          f.friend_sorter as sorter, 
-          f.friend_id as "id", 
-          f.friend as "name", 
-          min(f.friend_type) as friend_type,
-          f.friend_is_parent as is_parent,
-          f.friend_hide_children as hide_children,
-          f.friend_is_child as is_child
-          from friends_with_cats_vw f
-          where f.item_id in(select distinct item_id from search_by_vw where search_by = ANY($1))
-          group by
-          f.friend_cat_id, 
-          f.friend_cat,
-          f.friend_sorter, 
-          f.friend_id, 
-          f.friend, 
-          f.friend_is_parent,
-          f.friend_hide_children,
-          f.friend_is_child
-          having count(*) = (select count(distinct item_id) from search_by_vw where search_by  = ANY($1))
-          order by cat, sorter, "name"`;
-
-    db.any(sql, [array])
+          s.main_cat_id as cat_id,
+          u.friend_id as id,
+          s.sorter,
+          s.item as name,
+          s.is_parent,
+          s.hide_children,
+          s.hidden,
+          s.is_child,
+          min(friend_type) as friend_type
+          from union_friends u
+          INNER JOIN items_sorter_vw s
+          ON s.item_id = u.friend_id
+          where (u.item_id = ANY($1))
+          group by s.main_cat_id, s.sorter, u.friend_id, s.item, s.is_parent, s.hide_children, s.is_child, s.hidden
+          having count(*) = $2
+          ORDER BY sorter, name`;
+    console.log('sql:', sql);
+    db.any(sql, [array, arrlen])
     .then(data => {
      // console.log('data:', data);
       res.send(data);
@@ -327,11 +335,11 @@ app.post("/pairing/delete", (req, res, next) => {
       res.end();
    })
     .catch((err) => {
-       throw createError(500, {message: err.message});
+       next(err);
    })
 });
 
-//get friends - editor
+//get ALL friends - editor
 app.get("/friends/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   let sql;
@@ -344,7 +352,7 @@ app.get("/friends/:itemId", (req, res, next) => {
       res.send(data);
     })
     .catch(err => {
-        throw createError(500, {message: err.message});
+        next(err);
     })
 }
 });
