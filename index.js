@@ -79,7 +79,22 @@ app.get('/cats', (req, res, next) => {
 app.get("/itemsbycat/:catId", (req, res, next) => {
   const cat_id = req.params.catId;
   if (cat_id) {
-    db.any("select id, name, is_parent, hide_children, cat_id, is_child from items_hide_children where cat_id = $1 order by sorter, name;", [cat_id])
+    const sql = `
+     SELECT
+          main_cat_id as cat_id,
+          sorter,
+          item_id as id,
+          item as name,
+          hidden,
+          is_child,
+          hide_children,
+          is_parent
+     from items_sorter_vw
+     where main_cat_id = $1
+          and hidden = 0
+     order by sorter, name;`;
+    console.log(sql);
+    db.any(sql, [cat_id])
     .then(data => {
       //console.log('data: ', data);
       res.send(data);
@@ -87,6 +102,10 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
     .catch(err => {
         next(err);
     })
+} else {
+    let err = new Error('Missing CatId');
+    err.status = 400;  //bad user request
+    next(err); //go to nearest handler
 }
 });
 
@@ -136,48 +155,67 @@ app.post("/item/delete", (req, res, next) => {
 //insert new pairing - or edit affinity-level
 app.post("/pairing/new", (req, res, next) => {
   console.log('adding: ', req.body);
-  const {item1_id, item2_id, level=1} = req.body;
+  const {item1_id, catId, item2_id, level=1} = req.body;
   let parent = item1_id;
   let child =item2_id;
+  let cid = parseInt(catId);
+  const regFriends = [-1,1, 2,3,4]
   let sql;
 
-    //child  add once
-    if (parseInt(level) === 0) {
-      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT (item_id, friend_id, friend_type) DO NOTHING";
-      db.none(sql, [parent, child, level])
+    //child  add once //TODO rethink this?
+  if (parseInt(level) === 0) {
+      sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
+            VALUES ($1, $2, $3, $4) 
+            ON CONFLICT (group_id, member_id, friend_type) DO NOTHING`;     
+      db.none(sql, [parent, child, 0, 0])
       .then(() => {
            res.end();
-        })
+      })
     
 
-  //ingredient - add once for ingredient, once where sauce the friend of ingred
-    } else if (parseInt(level)===5) {
+  //ingredient - add to group table
+    } else if (parseInt(level)=== 5 ) {
+        const validCats = [11,12,13]; //double check this is right category
+        if (validCats.includes(cid)) {
+        sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
+                VALUES ($1, $2, $3, $4) 
+                ON CONFLICT (group_id, member_id, friend_type) DO NOTHING`;
+        db.none(sql, [parent, child, cid, level])
+          .then(() => {
+             res.end();
+          })
+      } else {
+          let err = new Error('Wrong main category');
+          err.status = 400;  //bad user request
+          next(err); //go to nearest handler
+      }
 
-      sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT (item_id, friend_id, friend_type) DO NOTHING";
-      db.none(sql, [parent, child, level])
+
+  //regular friend (must add twice)
+  } else {
+    if (regFriends.includes(parseInt(level))) {  
+      sql = `INSERT INTO friends(item_id, friend_id, friend_type) 
+             VALUES ($1, $2, $3) 
+             ON CONFLICT  (item_id, friend_id) 
+             DO UPDATE set friend_type = $3`;
+      db.none(sql, [item1_id, item2_id, level])
       .then(() => {
-        //now add on the ingredient side to link to sauce
-        db.none(sql, [child, parent, 7])
+         db.none(sql, [item2_id, item1_id, level])
         .then(() => {
-           res.end();
-        })
+          console.log('pairing added');
+          res.end();
+         })
       })
-
-  //not parent child (must add twice)
-  } else {   
-    sql = "INSERT INTO friends(item_id, friend_id, friend_type) VALUES ($1, $2, $3) ON CONFLICT  (item_id, friend_id) DO UPDATE set friend_type = $3";
-    db.none(sql, [item1_id, item2_id, level])
-    .then(() => {
-      db.none(sql, [item2_id, item1_id, level])
-      .then(() => {
-        console.log('pairing added');
-        res.end();
-       })
-    })
-    .catch((err) => {
-      next(err);
-    })
+    } else {
+      let err = new Error('Something went wrong');
+      err.status = 400;  //bad user request
+      next(err); //go to nearest handler
+    }
   }//end if
+  res.end();
+   // let err = new Error('Something went wrong');
+   //  err.status = 400;  //bad user request
+   //  next(err); //go to nearest handler
 });
 
 app.post("/merge", (req, res, next) => {
@@ -245,87 +283,87 @@ app.get("/mutual/:items", (req, res, next) => {
 
 //update a combo to make sure all ingredients
 //go with eachother as friends
-app.get("/updcombo/:itemId" , (req, res, next) => {
-  const item_id = req.params.itemId;
+// app.get("/updcombo/:itemId" , (req, res, next) => {
+//   const item_id = req.params.itemId;
  
-  if (item_id) {
-    db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and friend_type = 5", [item_id])
-    .then(ingreds => {
+//   if (item_id) {
+//     db.any("select friend_id as id from all_friends_vw where item_id = $1 and item_cat_id = 12 and friend_type = 5", [item_id])
+//     .then(ingreds => {
 
-    if (ingreds.length > 1) {
-       let i;
-       let inner;
-       let sql = "INSERT into friends (item_id, friend_id) VALUES ";
+//     if (ingreds.length > 1) {
+//        let i;
+//        let inner;
+//        let sql = "INSERT into friends (item_id, friend_id) VALUES ";
 
 
-       for (i=0; i < ingreds.length - 1; i++) {
+//        for (i=0; i < ingreds.length - 1; i++) {
 
-        //console.log(' i is:', i);
+//         //console.log(' i is:', i);
 
-           for (inner=i+1; inner < ingreds.length; inner++) {
+//            for (inner=i+1; inner < ingreds.length; inner++) {
 
-            // double insert both item and friend
-              sql = sql + "(" + ingreds[i].id + "," + ingreds[inner].id + "),";
-              sql = sql + "(" + ingreds[inner].id + "," + ingreds[i].id + "),";
-           }
-        }
+//             // double insert both item and friend
+//               sql = sql + "(" + ingreds[i].id + "," + ingreds[inner].id + "),";
+//               sql = sql + "(" + ingreds[inner].id + "," + ingreds[i].id + "),";
+//            }
+//         }
 
         
-         //removelast comma
-         sql = sql.slice(0, -1);
+//          //removelast comma
+//          sql = sql.slice(0, -1);
 
 
-         sql = sql + ' ON CONFLICT (item_id, friend_id) DO NOTHING';
-          console.log('ending sql', sql);
+//          sql = sql + ' ON CONFLICT (item_id, friend_id) DO NOTHING';
+//           console.log('ending sql', sql);
 
-          return db.any(sql)
-          .then(() => {
-            console.log('done')
-            res.send('done');
-            return;
-          })
-          .catch(err => {
-             throw createError(500, {message: err.message});
-          });
+//           return db.any(sql)
+//           .then(() => {
+//             console.log('done')
+//             res.send('done');
+//             return;
+//           })
+//           .catch(err => {
+//              throw createError(500, {message: err.message});
+//           });
       
-    } else {
-      //do nothing
-      res.end();
-    }
-  })
-  .catch(err => {
-     throw createError(500, {message: err.message});
-  });
-  } else {
-    //do nothing
-    res.end();
-  }
-});
+//     } else {
+//       //do nothing
+//       res.end();
+//     }
+//   })
+//   .catch(err => {
+//      throw createError(500, {message: err.message});
+//   });
+//   } else {
+//     //do nothing
+//     res.end();
+//   }
+// });
 
-//ROLLUP to parent
-app.post("/updparent", (req, res, next) => {
-   const {item_id} = req.body;
-   console.log('updating parent', item_id);
-   //must have children 0 or ingredients 5
-   return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type in (0, 5)", [item_id])
-   .then(data => {
-      console.log('data:', data.childcount)
-      if (data.childcount === '0') {
-          let err = new Error('Not a parent');
-          err.status = 400;  //bad user request
-          next(err); //go to nearest handler
-      } else {
-        return db.none("CALL sp_update_parent($1)" , [item_id])
-          .then(() => {
-               res.end();
-        })
-      }
-   })
-   .catch( err => {
-    console.log('got here');
-    next(err);
-   })
-});
+// //ROLLUP to parent
+// app.post("/updparent", (req, res, next) => {
+//    const {item_id} = req.body;
+//    console.log('updating parent', item_id);
+//    //must have children 0 or ingredients 5
+//    return db.one("SELECT count(*) as childcount from friends where item_id = $1 and friend_type in (0, 5)", [item_id])
+//    .then(data => {
+//       console.log('data:', data.childcount)
+//       if (data.childcount === '0') {
+//           let err = new Error('Not a parent');
+//           err.status = 400;  //bad user request
+//           next(err); //go to nearest handler
+//       } else {
+//         return db.none("CALL sp_update_parent($1)" , [item_id])
+//           .then(() => {
+//                res.end();
+//         })
+//       }
+//    })
+//    .catch( err => {
+//     console.log('got here');
+//     next(err);
+//    })
+// });
 
 //delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
@@ -344,8 +382,14 @@ app.get("/friends/:itemId", (req, res, next) => {
   const item_id = req.params.itemId;
   let sql;
   if (item_id) {
-    sql = "select friend_id as id, friend as name, friend_type, friend_is_parent as is_parent from all_friends_vw where item_id = $1 order by friend";
-    //console.log(sql);
+    sql = `select friend_id as id,
+     friend as name, 
+     friend_type, 
+     friend_is_parent as is_parent 
+     from all_friends_vw 
+     where item_id = $1 
+     order by friend`;
+   // console.log(sql);
     db.any(sql, [item_id])
     .then(data => {
      // console.log('data: ', data);

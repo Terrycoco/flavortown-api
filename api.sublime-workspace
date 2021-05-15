@@ -19,9 +19,17 @@
 			"file": "index.js",
 			"settings":
 			{
-				"buffer_size": 10914,
+				"buffer_size": 11175,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": ":src:sync.js",
+			"settings":
+			{
+				"buffer_size": 779,
+				"line_ending": "Windows"
 			}
 		}
 	],
@@ -285,15 +293,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 10914,
+						"buffer_size": 11175,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								4376,
-								4376
+								3929,
+								3929
 							]
 						],
 						"settings":
@@ -307,10 +315,43 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1800.0,
+						"translation.y": 2340.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": ":src:sync.js",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 779,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"bs_sintax": "javascript (babel)",
+							"buffer_scroll_name": "1d622d62",
+							"git_gutter_is_enabled": true,
+							"syntax": "Packages/Babel/JavaScript (Babel).sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
 					"type": "text"
 				}
 			]
