@@ -75,24 +75,23 @@ app.get('/cats', (req, res, next) => {
     })
 });
 
-//get items for one cat (no children) for initial FF
+//get items for one cat for initial FF
 app.get("/itemsbycat/:catId", (req, res, next) => {
   const cat_id = req.params.catId;
   if (cat_id) {
     const sql = `
      SELECT
-          main_cat_id as cat_id,
-          sorter,
-          item_id as id,
-          item as name,
-          hidden,
-          is_child,
+          parent_cat_id as cat_id,
+          parent_id,
+          parent,  
+          child_id as id,
+          child as name,
           hide_children,
-          is_parent
-     from items_sorter_vw
-     where main_cat_id = $1
-          and hidden = 0
-     order by sorter, name;`;
+          is_parent, 
+          is_child
+     from parent_items_vw
+     where parent_cat_id = $1
+     order by parent_cat_id, parent, name;`;
   //  console.log(sql);
     db.any(sql, [cat_id])
     .then(data => {
@@ -116,7 +115,7 @@ app.post("/items/new", (req, res, next) => {
   db.one("INSERT INTO items (item, main_cat_id) VALUES ($1, $2) RETURNING item_id as id, item as name, main_cat_id as cat_id", [item, cat_id])
     .then(data => {
       console.log('item added:', data);
-      res.send(data);
+      res.status(200).send(data);
    })
     .catch(err => {
        next(err);
@@ -348,7 +347,7 @@ app.use((req, res, next) => {
 // error handler middleware
 app.use((error, req, res, next) => {
   console.log('caught', error);
-  res.status(error.status).json({message: error.message});
+  res.status(error.status || 500).json({message: error.message});
 });
 
 
