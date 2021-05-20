@@ -161,11 +161,10 @@ app.post("/pairing/new", (req, res, next) => {
   const regFriends = [-1,1, 2,3,4]
   let sql;
 
-    //child  add once //TODO rethink this?
+    //child  add once to group table 
   if (parseInt(level) === 0) {
       sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
-            VALUES ($1, $2, $3, $4) 
-            ON CONFLICT (group_id, member_id, friend_type) DO NOTHING`;     
+            VALUES ($1, $2, $3, $4)`;     
       db.none(sql, [parent, child, 0, 0])
       .then(() => {
            res.end();
@@ -177,8 +176,7 @@ app.post("/pairing/new", (req, res, next) => {
         const validCats = [11,12,13]; //double check this is right category
         if (validCats.includes(cid)) {
         sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
-                VALUES ($1, $2, $3, $4) 
-                ON CONFLICT (group_id, member_id, group_type, friend_type) DO NOTHING`;
+                VALUES ($1, $2, $3, $4)`;
         db.none(sql, [parent, child, cid, level])
           .then(() => {
              res.end();
@@ -234,23 +232,24 @@ app.get("/mutual/:items", (req, res, next) => {
   console.log('fetching friends for ', array, Array.isArray(array));
   const arrlen = array.length;
   const sql = `
-          select 
-          s.main_cat_id as cat_id,
-          u.friend_id as id,
-          s.sorter,
-          s.item as name,
-          s.is_parent,
-          s.hide_children,
-          s.hidden,
-          s.is_child,
+ SELECT 
+          p.parent_cat_id as cat_id,
+          p.parent_id,
+          p.parent,
+          p.child_cat_id,
+          p.child_id as id,
+          p.child as name,
+          p.is_parent,
+          p.hide_children,
+          p.is_child,
           min(friend_type) as friend_type
           from union_friends u
-          INNER JOIN items_sorter_vw s
-          ON s.item_id = u.friend_id
-          where (u.item_id = ANY($1))
-          group by s.main_cat_id, s.sorter, u.friend_id, s.item, s.is_parent, s.hide_children, s.is_child, s.hidden
+          INNER JOIN parent_items_vw p
+          ON p.parent_id = u.friend_id
+          where u.item_id = ANY($1)
+          group by parent_cat_id, parent_id, parent, child_cat_id, child_id, child, is_parent, is_child, hide_children
           having count(*) = $2
-          ORDER BY sorter, name`;
+          ORDER BY cat_id, parent, child`;
     console.log('sql:', sql);
     db.any(sql, [array, arrlen])
     .then(data => {
