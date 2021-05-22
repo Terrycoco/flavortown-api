@@ -39,7 +39,7 @@ app.get('/testdb', async(req, res) => {
 
 //all items -- for editor
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, hide_children, cat from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
+   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, hide_children, cat, sort, description from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
     .then(data => {
       res.send(data);
     })
@@ -53,7 +53,7 @@ app.get('/itemsfiltered/:filter', (req, res, next) => {
   const array = JSON.parse(req.params.filter); //convert to array
   console.log('items passed', array, Array.isArray(array));
   const str = array.join(",");
-  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat, hide_children from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
+  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat, hide_children, sort, description from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
    console.log('filter sql',sql);
    db.any(sql) 
     .then(data => {
@@ -86,6 +86,7 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
           parent,
           parent_desc,  
           child_id as id,
+          child_sort,
           child as name,
           child_desc as desc,
           hide_children,
@@ -93,7 +94,7 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
           is_child
      from parent_items_vw
      where parent_cat_id = $1
-     order by parent_cat_id, parent, name;`;
+     order by parent_cat_id, parent, child_sort, name;`;
   //  console.log(sql);
     db.any(sql, [cat_id])
     .then(data => {
@@ -127,9 +128,17 @@ app.post("/items/new", (req, res, next) => {
 //insert new item
 app.post("/upditem", (req, res, next) => {
   console.log(req.body);
-  const {id, name, is_parent, cat_id, hide_children} = req.body;
-  console.log('editing item: ', id);           
-  db.none("UPDATE items set item = $1, main_cat_id = $2, is_parent= $3, hide_children=$4  WHERE item_id = $5", [name, cat_id, is_parent, hide_children, id] )
+  const {id, name, is_parent, cat_id, hide_children, sort, description} = req.body;
+  console.log('editing item: ', id);
+  let sql =  `UPDATE items 
+              set item = $1, 
+              main_cat_id = $2, 
+              is_parent= $3, 
+              hide_children=$4,
+              sort=$5,
+              description=$6  
+              WHERE item_id = $7`          
+  db.none(sql, [name, cat_id, is_parent, hide_children, sort, description, id] )
     .then(() => {
       console.log('item updated:', req.body);
       res.end();
@@ -247,7 +256,6 @@ app.get("/mutual/:items", (req, res, next) => {
       from
       union_friends u inner join items i on u.item_id = i.item_id
       inner join items f on u.friend_id = f.item_id
-
       where u.item_id = ANY($1) 
       group by f.main_cat_id, f.description, f.sort, u.friend_id, f.item
       having count(*) >= $2
@@ -283,10 +291,10 @@ app.get("/mutual/:items", (req, res, next) => {
 
 //delete pairing 
 app.post("/pairing/delete", (req, res, next) => {
-  const {item1_id, item2_id } = req.body;           
-  //delete from both tables
-//  console.log('deleting: ', req.body);
-  return db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
+   const {item1_id, item2_id } = req.body;           
+   //delete from both tables
+   //  console.log('deleting: ', req.body);
+   return db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
     .then(() => {
       return db.none("DELETE from groups WHERE (group_id = $1 AND member_id = $2);", [item1_id, item2_id])
    }).then(() => {
