@@ -39,7 +39,20 @@ app.get('/testdb', async(req, res) => {
 
 //all items -- for editor
 app.get('/items', (req, res, next) => {
-   db.any('select item_id as id, item as name, main_cat_id as cat_id, is_parent, hide_children, cat, sort, description from items inner join cats on items.main_cat_id = cats.cat_id ORDER BY item;') 
+  let sql = `select item_id as id, 
+                    item as name, 
+                    main_cat_id as cat_id, 
+                    is_parent, 
+                    hide_children, 
+                    cat, 
+                    sort, 
+                    description,
+                    pic_url
+                    from items 
+                    inner join cats 
+                    on items.main_cat_id = cats.cat_id 
+                    ORDER BY item`;
+   db.any(sql) 
     .then(data => {
       res.send(data);
     })
@@ -91,7 +104,8 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
           child_desc as desc,
           hide_children,
           is_parent, 
-          is_child
+          is_child,
+          child_pic_url
      from parent_items_vw
      where parent_cat_id = $1
      order by parent_cat_id, parent, child_sort, name;`;
@@ -128,7 +142,7 @@ app.post("/items/new", (req, res, next) => {
 //insert new item
 app.post("/upditem", (req, res, next) => {
   console.log(req.body);
-  const {id, name, is_parent, cat_id, hide_children, sort, description} = req.body;
+  const {id, name, is_parent, cat_id, hide_children, sort, description, pic_url} = req.body;
   console.log('editing item: ', id);
   let sql =  `UPDATE items 
               set item = $1, 
@@ -136,9 +150,10 @@ app.post("/upditem", (req, res, next) => {
               is_parent= $3, 
               hide_children=$4,
               sort=$5,
-              description=$6  
-              WHERE item_id = $7`          
-  db.none(sql, [name, cat_id, is_parent, hide_children, sort, description, id] )
+              description=$6,
+              pic_url=$7
+              WHERE item_id = $8`          
+  db.none(sql, [name, cat_id, is_parent, hide_children, sort, description, pic_url, id] )
     .then(() => {
       console.log('item updated:', req.body);
       res.end();
