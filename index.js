@@ -218,8 +218,8 @@ app.post("/pairing/new", (req, res, next) => {
   } else {
     if (regFriends.includes(parseInt(level))) {
       //insert least as the item
-      let first = min(item1_id, item2_id);
-      let second = max(item1_id, item2_id);
+      let first = Math.min(item1_id, item2_id);
+      let second = Math.max(item1_id, item2_id);
       sql = `INSERT INTO friends(item_id, friend_id, friend_type) 
              VALUES ($1, $2, $3) 
              ON CONFLICT  (item_id, friend_id) 
@@ -308,10 +308,10 @@ app.get("/mutual/:items", (req, res, next) => {
 app.post("/pairing/delete", (req, res, next) => {
    const {item1_id, item2_id } = req.body;           
    //delete from both tables
-   //  console.log('deleting: ', req.body);
+     console.log('deleting: ', req.body);
    return db.none("DELETE from friends WHERE (item_id = $1 AND friend_id = $2) OR (friend_id = $1 AND item_id = $2);", [item1_id, item2_id])
     .then(() => {
-      return db.none("DELETE from groups WHERE (group_id = $1 AND member_id = $2);", [item1_id, item2_id])
+      return db.none("DELETE from groups WHERE (group_id = $1 AND member_id = $2) OR (member_id = $1 AND group_id = $2);", [item1_id, item2_id])
    }).then(() => {
     res.end();
    })
