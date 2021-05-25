@@ -262,8 +262,8 @@ app.get("/mutual/:items", (req, res, next) => {
       f.item as name,
       f.main_cat_id as cat_id,
       f.description as desc,
+      f.pic_url as child_pic_url,
       u.friend_id as id,
-      CASE WHEN f.description IS NULL THEN 0 ELSE 1 END as has_desc,
       0 as is_parent,
       0 as is_child,
       min(u.friend_type) as friend_type,
@@ -272,7 +272,7 @@ app.get("/mutual/:items", (req, res, next) => {
       union_friends u inner join items i on u.item_id = i.item_id
       inner join items f on u.friend_id = f.item_id
       where u.item_id = ANY($1) 
-      group by f.main_cat_id, f.description, f.sort, u.friend_id, f.item
+      group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
       having count(*) >= $2
       order by cat_id, name`;
     console.log('sql:', sql);
