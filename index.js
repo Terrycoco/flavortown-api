@@ -37,6 +37,27 @@ app.get('/testdb', async(req, res) => {
   }
 });
 
+
+//THIS WILL GROW
+//all items -- for popup
+app.get('/item/:id', (req, res, next) => {
+  const id = JSON.parse(req.params.id); 
+  let sql = `select item_id as id, 
+                    item as name,   
+                    description as desc,
+                    pic_url
+                    from items 
+             WHERE item_id = $1
+             `;
+   db.any(sql, id) 
+    .then(data => {
+      res.send(data);
+    })
+    .catch(err => {
+      next(err);
+    })
+});
+
 //all items -- for editor
 app.get('/items', (req, res, next) => {
   let sql = `select item_id as id, 
@@ -139,29 +160,7 @@ app.post("/items/new", (req, res, next) => {
     })
 });
 
-//insert new item
-app.post("/upditem", (req, res, next) => {
-  console.log(req.body);
-  const {id, name, is_parent, cat_id, hide_children, sort, description, pic_url} = req.body;
-  console.log('editing item: ', id);
-  let sql =  `UPDATE items 
-              set item = $1, 
-              main_cat_id = $2, 
-              is_parent= $3, 
-              hide_children=$4,
-              sort=$5,
-              description=$6,
-              pic_url=$7
-              WHERE item_id = $8`          
-  db.none(sql, [name, cat_id, is_parent, hide_children, sort, description, pic_url, id] )
-    .then(() => {
-      console.log('item updated:', req.body);
-      res.end();
-   })
-    .catch(err => {
-       next(err);
-    })
-});
+
 
 //delete item
 app.post("/item/delete", (req, res, next) => {
@@ -275,7 +274,7 @@ app.get("/mutual/:items", (req, res, next) => {
       group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
       having count(*) >= $2
       order by cat_id, name`;
-    console.log('sql:', sql);
+   // console.log('sql:', sql);
     db.any(sql, [array, arrlen])
     .then(data => {
      // console.log('data:', data);
@@ -326,6 +325,7 @@ app.get("/friends/:itemId", (req, res, next) => {
   let sql;
   if (item_id) {
     sql = `select friend_id as id,
+     friend_cat_id as cat_id,
      friend as name, 
      friend_type, 
      friend_is_parent as is_parent 
@@ -358,6 +358,45 @@ app.get("/ingreds/:itemId", (req, res, next) => {
     })
 }
 });
+
+//insert new item
+app.post("/upditem", (req, res, next) => {
+  console.log(req.body);
+
+  const {id, name, is_parent, cat_id, hide_children, sort, description, pic_url} = req.body;
+  console.log('editing item: ', id);
+  let parent = (!is_parent) ? 0 : 1;
+  let sql =  `UPDATE items 
+              set item = $1, 
+              main_cat_id = $2, 
+              is_parent= $3, 
+              hide_children=$4,
+              sort=$5,
+              description=$6,
+              pic_url=$7
+              WHERE item_id = $8`          
+  db.none(sql, [name, cat_id, parent, hide_children, sort, description, pic_url, id] )
+    .then(() => {
+      console.log('item updated:', req.body);
+      res.end();
+   })
+    .catch(err => {
+       next(err);
+    })
+});
+
+//update combos
+app.get("/updcombos", (req, res, next) => {
+  db.none("call sp_update_combos()")
+  .then( ( ) => {
+    res.send(true);
+  })
+  .catch(err => {
+    next(err);
+  })
+});
+
+
 
 
 //no route found push to handler
