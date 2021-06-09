@@ -45,7 +45,8 @@ app.get('/item/:id', (req, res, next) => {
   let sql = `select item_id as id, 
                     item as name,   
                     description as desc,
-                    pic_url
+                    pic_url,
+                    is_general
                     from items 
              WHERE item_id = $1
              `;
@@ -63,7 +64,8 @@ app.get('/items', (req, res, next) => {
   let sql = `select item_id as id, 
                     item as name, 
                     main_cat_id as cat_id, 
-                    is_parent, 
+                    is_parent,
+                    is_general, 
                     hide_children, 
                     cat, 
                     sort, 
@@ -87,7 +89,20 @@ app.get('/itemsfiltered/:filter', (req, res, next) => {
   const array = JSON.parse(req.params.filter); //convert to array
   console.log('items passed', array, Array.isArray(array));
   const str = array.join(",");
-  const sql = "select item_id as id, item as name, is_parent, main_cat_id as cat_id, cat, hide_children, sort, description from items inner join cats on items.main_cat_id = cats.cat_id WHERE main_cat_id not in(" + str + ") ORDER BY item;"
+  const sql = `select item_id as id, 
+               item as name, 
+               is_parent,
+               is_general, 
+               main_cat_id as cat_id, 
+               cat, 
+               hide_children, 
+               sort, 
+               description 
+               from items inner join cats 
+               on items.main_cat_id = cats.cat_id 
+               WHERE main_cat_id not in(" + str + ") 
+               ORDER BY item`;
+
    console.log('filter sql',sql);
    db.any(sql) 
     .then(data => {
@@ -183,26 +198,30 @@ app.post("/pairing/new", (req, res, next) => {
   let parent = item1_id;
   let child =item2_id;
   let cid = parseInt(catId);
-  const regFriends = [-1,1, 2,3,4]
+  const regFriends = [-1,1,2,3,4];
   let sql;
 
+
+  let lev = parseInt(level);
+
+
     //child  add once to group table 
-  if (parseInt(level) === 0) {
+  if (lev === 0 || lev === 9) {
       sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
             VALUES ($1, $2, $3, $4)`;     
-      db.none(sql, [parent, child, 0, 0])
+      db.none(sql, [parent, child, lev, lev])
       .then(() => {
            res.end();
       })
     
 
   //ingredient - add to group table
-    } else if (parseInt(level)=== 5 ) {
+    } else if (lev === 5 ) {
         const validCats = [11,12,13]; //double check this is right category
         if (validCats.includes(cid)) {
         sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
                 VALUES ($1, $2, $3, $4)`;
-        db.none(sql, [parent, child, cid, level])
+        db.none(sql, [parent, child, cid, lev])
           .then(() => {
              res.end();
           })
@@ -215,7 +234,7 @@ app.post("/pairing/new", (req, res, next) => {
 
   //regular friend just add once!
   } else {
-    if (regFriends.includes(parseInt(level))) {
+    if (regFriends.includes(lev)) {
       //insert least as the item
       let first = Math.min(item1_id, item2_id);
       let second = Math.max(item1_id, item2_id);
@@ -223,7 +242,7 @@ app.post("/pairing/new", (req, res, next) => {
              VALUES ($1, $2, $3) 
              ON CONFLICT  (item_id, friend_id) 
              DO UPDATE set friend_type = $3`;
-      db.none(sql, [first, second, level])
+      db.none(sql, [first, second, lev])
       .then(() => {
           console.log('pairing added');
           res.end();
@@ -270,7 +289,7 @@ app.get("/mutual/:items", (req, res, next) => {
       from
       union_friends u inner join items i on u.item_id = i.item_id
       inner join items f on u.friend_id = f.item_id
-      where u.item_id = ANY($1) 
+      where u.item_id = ANY($1)
       group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
       having count(*) >= $2
       order by cat_id, name`;
@@ -363,7 +382,7 @@ app.get("/ingreds/:itemId", (req, res, next) => {
 app.post("/upditem", (req, res, next) => {
   console.log(req.body);
 
-  const {id, name, is_parent, cat_id, hide_children, sort, description, pic_url} = req.body;
+  const {id, name, is_parent, cat_id, hide_children, sort, description, pic_url, is_general} = req.body;
   console.log('editing item: ', id);
   let parent = (!is_parent) ? 0 : 1;
   let sql =  `UPDATE items 
@@ -373,9 +392,10 @@ app.post("/upditem", (req, res, next) => {
               hide_children=$4,
               sort=$5,
               description=$6,
-              pic_url=$7
-              WHERE item_id = $8`          
-  db.none(sql, [name, cat_id, parent, hide_children, sort, description, pic_url, id] )
+              pic_url=$7, 
+              is_general = $8
+              WHERE item_id = $9`          
+  db.none(sql, [name, cat_id, parent, hide_children, sort, description, pic_url, is_general, id] )
     .then(() => {
       console.log('item updated:', req.body);
       res.end();
