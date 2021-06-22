@@ -44,7 +44,7 @@ app.get('/item/:id', (req, res, next) => {
   const id = JSON.parse(req.params.id); 
   let sql = `select item_id as id, 
                     item as name,   
-                    description as desc,
+                    description as descr,
                     pic_url,
                     is_general
                     from items 
@@ -133,11 +133,11 @@ app.get("/itemsbycat/:catId", (req, res, next) => {
           parent_cat_id as cat_id,
           parent_id,
           parent,
-          parent_desc,  
+          parent_descr,  
           child_id as id,
           child_sort,
           child as name,
-          child_desc as desc,
+          child_descr as descr,
           hide_children,
           is_parent, 
           is_child,
@@ -275,24 +275,48 @@ app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('fetching friends for ', array, Array.isArray(array));
   const arrlen = array.length;
-  const sql = `
+  const sql =`
       select 
-      f.item as name,
-      f.main_cat_id as cat_id,
-      f.description as desc,
-      f.pic_url as child_pic_url,
-      u.friend_id as id,
+      id,
+      name,
+      cat_id,
+      descr,
+      pic_url,
       0 as is_parent,
       0 as is_child,
-      min(u.friend_type) as friend_type,
-      count(u.friend_type) as count
+      min(friend_type) as friend_type,
+      count(friend_type) as count
       from
-      union_friends u inner join items i on u.item_id = i.item_id
-      inner join items f on u.friend_id = f.item_id
-      where u.item_id = ANY($1)
-      group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
-      having count(*) >= $2
-      order by cat_id, name`;
+      friends_search
+      where search_id = ANY($1)
+      and friend_type > 0
+      group by 
+      id,
+      name,
+      cat_id,
+      descr,
+      pic_url
+      HAVING count(*) >= $2
+      ORDER BY cat_id, name;`;
+  // const sql = `
+  //     select 
+  //     f.item as name,
+  //     f.main_cat_id as cat_id,
+  //     f.description as desc,
+  //     f.pic_url as child_pic_url,
+  //     u.friend_id as id,
+  //     0 as is_parent,
+  //     0 as is_child,
+  //     min(u.friend_type) as friend_type,
+  //     count(u.friend_type) as count
+  //     from
+  //     union_friends u inner join items i on u.item_id = i.item_id
+  //     inner join items f on u.friend_id = f.item_id
+  //     where u.item_id = ANY($1)
+  //     and u.friend_type > 0
+  //     group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
+  //     having count(*) >= $2
+  //     order by cat_id, name`;
    // console.log('sql:', sql);
     db.any(sql, [array, arrlen])
     .then(data => {
@@ -416,12 +440,21 @@ app.get("/updcombos", (req, res, next) => {
   })
 });
 
-
+//update search table
+app.post("/updfriends", (req, res, next) => {
+  db.none("call sp_make_friends_search()")
+  .then( ( ) => {
+    res.send(true);
+  })
+  .catch(err => {
+    next(err);
+  })
+});
 
 
 //no route found push to handler
 app.use((req, res, next) => {
- const error = new Error("Not found")
+ const error = new Error(req.url + " Not found")
  error.status = 404;
  next(error);
 });
