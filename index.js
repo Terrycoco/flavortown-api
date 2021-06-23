@@ -208,7 +208,8 @@ app.post("/pairing/new", (req, res, next) => {
     //child  add once to group table 
   if (lev === 0 || lev === 9) {
       sql =  `INSERT INTO groups(group_id, member_id, group_type, friend_type) 
-            VALUES ($1, $2, $3, $4)`;     
+            VALUES ($1, $2, $3, $4)
+            `;     
       db.none(sql, [parent, child, lev, lev])
       .then(() => {
            res.end();
@@ -261,6 +262,7 @@ app.post("/pairing/new", (req, res, next) => {
 
 app.post("/merge", (req, res, next) => {
    const {keep, lose} = req.body;
+   console.log('merging ' + lose + ' into ' + keep);
    db.none("CALL sp_merge_items($1, $2)", [keep, lose])
    .then(() => {
       res.end();
@@ -275,49 +277,72 @@ app.get("/mutual/:items", (req, res, next) => {
   const array = JSON.parse(req.params.items); //convert to array
   console.log('fetching friends for ', array, Array.isArray(array));
   const arrlen = array.length;
-  const sql =`
-      select 
-      id,
-      name,
-      cat_id,
-      descr,
-      pic_url,
-      0 as is_parent,
-      0 as is_child,
-      min(friend_type) as friend_type,
-      count(friend_type) as count
-      from
-      friends_search
-      where search_id = ANY($1)
-      and friend_type > 0
-      group by 
-      id,
-      name,
-      cat_id,
-      descr,
-      pic_url
-      HAVING count(*) >= $2
-      ORDER BY cat_id, name;`;
-  // const sql = `
+  // const sql =`
   //     select 
-  //     f.item as name,
-  //     f.main_cat_id as cat_id,
-  //     f.description as desc,
-  //     f.pic_url as child_pic_url,
-  //     u.friend_id as id,
+  //     id,
+  //     name,
+  //     cat_id,
+  //     descr,
+  //     pic_url,
   //     0 as is_parent,
   //     0 as is_child,
-  //     min(u.friend_type) as friend_type,
-  //     count(u.friend_type) as count
+  //     min(friend_type) as friend_type,
+  //     count(friend_type) as count
   //     from
-  //     union_friends u inner join items i on u.item_id = i.item_id
-  //     inner join items f on u.friend_id = f.item_id
-  //     where u.item_id = ANY($1)
-  //     and u.friend_type > 0
-  //     group by f.main_cat_id, f.description, f.pic_url, f.sort, u.friend_id, f.item
-  //     having count(*) >= $2
-  //     order by cat_id, name`;
-   // console.log('sql:', sql);
+  //     friends_search
+  //     where search_id = ANY($1)
+  //     and friend_type > 0
+  //     group by 
+  //     id,
+  //     name,
+  //     cat_id,
+  //     descr,
+  //     pic_url
+  //     HAVING count(*) >= $2
+  //     ORDER BY cat_id, name;`;
+const sql = `
+SELECT
+      friends_search.id,
+      friends_search.name,
+       friends_search.cat_id,
+       friends_search.descr,
+       friends_search.pic_url,
+      0 as is_parent,
+      0 as is_child,
+      min( friends_search.friend_type) as friend_type
+      from
+      friends_search
+      where search_id in (SELECT
+         item_id 
+    from items
+    where item_id = ANY($1)
+    and item_id not in
+    (
+    select group_id from groups 
+      where group_type = 9
+      and group_id = ANY($1)
+      and member_id = ANY($1)
+    ))
+      group by 
+       friends_search.id,
+       friends_search.name,
+       friends_search.cat_id,
+       friends_search.descr,
+       friends_search.pic_url
+      HAVING count(*) >= (SELECT
+         count(*)
+    from items
+    where item_id = ANY($1)
+    and item_id not in
+    (
+    select group_id from groups 
+      where group_type = 9
+      and group_id = ANY($1)
+      and member_id = ANY($1)
+    ))
+    ORDER BY cat_id, name;
+`;
+   console.log('sql:', sql);
     db.any(sql, [array, arrlen])
     .then(data => {
      // console.log('data:', data);
